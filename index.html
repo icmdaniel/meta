@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metas do Casal</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        /* Variáveis de Cores e Design Moderno */
+        :root {
+            --bg-color: #121214;
+            --surface-color: #202024;
+            --primary-color: #8257e5;
+            --text-color: #e1e1e6;
+            --success-color: #00b37e;
+            --danger-color: #f75a68;
+            --border-radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; }
+        
+        body { background-color: var(--bg-color); color: var(--text-color); overflow-x: hidden; }
+
+        /* Cabeçalho */
+        header { background-color: var(--surface-color); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #323238; position: sticky; top: 0; z-index: 10; }
+        .menu-toggle { font-size: 24px; color: var(--text-color); cursor: pointer; }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .user-info img { width: 35px; height: 35px; border-radius: 50%; display: none; }
+
+        /* Menu Lateral Retrátil (Vertical) */
+        .sidebar { position: fixed; top: 0; left: -260px; width: 260px; height: 100vh; background-color: var(--surface-color); padding-top: 70px; transition: left 0.3s ease; z-index: 9; border-right: 1px solid #323238; display: flex; flex-direction: column; }
+        .sidebar.active { left: 0; }
+        .sidebar a { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 16px; border-bottom: 1px solid #323238; display: flex; align-items: center; gap: 15px; }
+        .sidebar a:hover { background-color: #29292e; color: var(--primary-color); }
+        
+        /* Layout Principal Compacto */
+        main { padding: 20px; max-width: 600px; margin: 0 auto; transition: margin-left 0.3s ease; }
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        /* Cartões */
+        .card { background-color: var(--surface-color); padding: 15px; border-radius: var(--border-radius); margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card h3 { margin-bottom: 10px; font-size: 18px; color: var(--primary-color); }
+        
+        /* Formulários e Botões */
+        input, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #323238; border-radius: var(--border-radius); background-color: #121214; color: var(--text-color); font-size: 16px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: var(--border-radius); font-size: 16px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        button:hover { opacity: 0.9; }
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-google { background-color: #ea4335; margin-top: 50px; }
+        .btn-success { background-color: var(--success-color); flex: 1; }
+        .btn-danger { background-color: var(--danger-color); flex: 1; }
+        .btn-small { width: auto; padding: 6px 12px; font-size: 14px; }
+        
+        /* Lista de Metas */
+        .goal-item { display: flex; flex-direction: column; gap: 10px; padding: 15px 0; border-bottom: 1px solid #323238; }
+        .goal-item:last-child { border-bottom: none; }
+        .goal-header { display: flex; justify-content: space-between; align-items: center; }
+        .goal-points { background-color: var(--primary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .actions { display: flex; gap: 10px; margin-top: 10px; }
+
+        /* Consequência e Ranking */
+        .consequence-alert { background: linear-gradient(45deg, var(--danger-color), #b33939); color: white; padding: 20px; border-radius: var(--border-radius); text-align: center; margin-bottom: 20px; display: none; animation: pulse 2s infinite; }
+        .ranking-list { list-style: none; }
+        .ranking-item { display: flex; justify-content: space-between; padding: 15px; background-color: #29292e; margin-bottom: 10px; border-radius: var(--border-radius); align-items: center; font-weight: bold; font-size: 18px; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        #login-screen { text-align: center; padding-top: 50px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="section active">
+        <div style="max-width: 400px; margin: 0 auto;">
+            <i class="fa-solid fa-heart" style="font-size: 50px; color: var(--primary-color); margin-bottom: 20px;"></i>
+            <h2>Metas do Casal</h2>
+            <p style="color: #a8a8b3; margin-top: 10px;">Faça login para acompanhar as metas.</p>
+            <button id="btn-login" class="btn-google"><i class="fa-brands fa-google"></i> Entrar com Google</button>
+        </div>
+    </div>
+
+    <div id="app-screen" style="display: none;">
+        <header>
+            <i class="fa-solid fa-bars menu-toggle" onclick="toggleMenu()"></i>
+            <h3>Metas do Casal</h3>
+            <div class="user-info">
+                <img id="user-pic" src="" alt="Foto">
+            </div>
+        </header>
+
+        <nav id="sidebar" class="sidebar">
+            <a href="#" onclick="showSection('sec-avaliar')"><i class="fa-solid fa-list-check"></i> Avaliar Hoje</a>
+            <a href="#" onclick="showSection('sec-ranking')"><i class="fa-solid fa-trophy"></i> Ranking Diário</a>
+            <a href="#" onclick="showSection('sec-gerenciar')"><i class="fa-solid fa-gear"></i> Gerenciar Metas</a>
+            <a href="#" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
+        </nav>
+
+        <main>
+            <section id="sec-avaliar" class="section active">
+                <div class="card">
+                    <h3><i class="fa-solid fa-clipboard-check"></i> Avaliações de Hoje</h3>
+                    <p style="font-size: 14px; color: #a8a8b3; margin-bottom: 15px;">Avalie as metas do seu parceiro(a).</p>
+                    <div id="evaluation-list">Carregando...</div>
+                </div>
+            </section>
+
+            <section id="sec-ranking" class="section">
+                <div id="consequence-box" class="consequence-alert">
+                    <h3><i class="fa-solid fa-triangle-exclamation"></i> Consequência Hoje!</h3>
+                    <p id="consequence-text" style="margin-top: 10px;">Alguém falhou nas metas de hoje e terá que arcar com as consequências!</p>
+                </div>
+                <div class="card">
+                    <h3><i class="fa-solid fa-crown"></i> Placar Geral</h3>
+                    <ul class="ranking-list" id="ranking-list">Carregando...</ul>
+                </div>
+            </section>
+
+            <section id="sec-gerenciar" class="section">
+                <div class="card">
+                    <h3>Adicionar Nova Meta</h3>
+                    <input type="text" id="goal-title" placeholder="Ex: Ir à academia, Ler 10 páginas...">
+                    <input type="number" id="goal-points" placeholder="Pontuação (Ex: 10)">
+                    <select id="goal-owner">
+                        <option value="">Carregando usuários...</option>
+                    </select>
+                    <button class="btn-primary" onclick="addGoal()"><i class="fa-solid fa-plus"></i> Salvar Meta</button>
+                </div>
+                <div class="card">
+                    <h3>Metas Cadastradas</h3>
+                    <div id="goals-list"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_thF3Zi_guGJORQWBVTShTb-A23i060Q",
+            authDomain: "metas-34ada.firebaseapp.com",
+            projectId: "metas-34ada",
+            storageBucket: "metas-34ada.firebasestorage.app",
+            messagingSenderId: "172329013685",
+            appId: "1:172329013685:web:dce54b733c1483cf3249fc"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let usersData = {}; 
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Autenticação
+        document.getElementById('btn-login').addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(error => console.error(error));
+        });
+
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-screen').classList.remove('active');
+                document.getElementById('app-screen').style.display = 'block';
+                document.getElementById('user-pic').src = user.photoURL;
+                document.getElementById('user-pic').style.display = 'block';
+                
+                // Salva usuário no banco para o dropdown
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid, name: user.displayName, email: user.email
+                }, { merge: true });
+
+                loadUsers();
+                loadDailyEvaluations();
+                loadRanking();
+                loadManageGoals();
+            } else {
+                document.getElementById('login-screen').classList.add('active');
+                document.getElementById('app-screen').style.display = 'none';
+                currentUser = null;
+            }
+        });
+
+        // Carregar Usuários para o Select
+        async function loadUsers() {
+            const q = query(collection(db, "users"));
+            onSnapshot(q, (snapshot) => {
+                const select = document.getElementById('goal-owner');
+                select.innerHTML = '';
+                snapshot.forEach(doc => {
+                    usersData[doc.id] = doc.data();
+                    select.innerHTML += `<option value="${doc.id}">${doc.data().name} (${doc.id === currentUser.uid ? 'Você' : 'Parceiro'})</option>`;
+                });
+            });
+        }
+
+        // Adicionar Meta
+        window.addGoal = async () => {
+            const title = document.getElementById('goal-title').value;
+            const points = parseInt(document.getElementById('goal-points').value);
+            const ownerUid = document.getElementById('goal-owner').value;
+
+            if (!title || !points || !ownerUid) return Swal.fire('Erro', 'Preencha todos os campos.', 'error');
+
+            await addDoc(collection(db, "goals"), { title, points, ownerUid });
+            document.getElementById('goal-title').value = '';
+            document.getElementById('goal-points').value = '';
+            Swal.fire('Sucesso', 'Meta adicionada!', 'success');
+        };
+
+        // Excluir Meta
+        window.deleteGoal = async (id) => {
+            if(confirm('Tem certeza que deseja excluir esta meta?')) {
+                await deleteDoc(doc(db, "goals", id));
+            }
+        };
+
+        // Carregar Metas no Gerenciador
+        function loadManageGoals() {
+            const q = query(collection(db, "goals"));
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('goals-list');
+                list.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const goal = docSnap.data();
+                    const ownerName = usersData[goal.ownerUid]?.name || 'Desconhecido';
+                    list.innerHTML += `
+                        <div class="goal-item">
+                            <div class="goal-header">
+                                <strong>${goal.title}</strong>
+                                <span class="goal-points">${goal.points} pts</span>
+                            </div>
+                            <div style="font-size:12px; color:#a8a8b3;">De: ${ownerName}</div>
+                            <button class="btn-danger btn-small" onclick="deleteGoal('${docSnap.id}')"><i class="fa-solid fa-trash"></i> Excluir</button>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        // Carregar Avaliações de Hoje
+        function loadDailyEvaluations() {
+            onSnapshot(collection(db, "goals"), async (goalsSnapshot) => {
+                // Puxar as avaliações já feitas hoje
+                const evalsQ = query(collection(db, "evaluations"), where("date", "==", todayStr));
+                const evalsSnapshot = await getDocs(evalsQ);
+                const todayEvals = {};
+                evalsSnapshot.forEach(d => { todayEvals[d.data().goalId] = d.data(); });
+
+                const list = document.getElementById('evaluation-list');
+                list.innerHTML = '';
+                
+                goalsSnapshot.forEach(docSnap => {
+                    const goal = docSnap.data();
+                    const goalId = docSnap.id;
+                    const isMyGoal = goal.ownerUid === currentUser.uid;
+                    const evalData = todayEvals[goalId];
+
+                    // Eu só avalio as metas que não são minhas (Apenas as do parceiro).
+                    // As minhas metas só aparecem para leitura (para ver se ela já avaliou).
+                    let actionHtml = '';
+
+                    if (!isMyGoal) {
+                        if (evalData) {
+                            actionHtml = `<span style="color: ${evalData.completed ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight:bold;">
+                                ${evalData.completed ? '<i class="fa-solid fa-check"></i> Você marcou: Cumpriu' : '<i class="fa-solid fa-xmark"></i> Você marcou: Falhou'}
+                            </span>`;
+                        } else {
+                            actionHtml = `
+                                <div class="actions">
+                                    <button class="btn-success" onclick="evaluateGoal('${goalId}', '${goal.ownerUid}', ${goal.points}, true)">Cumpriu</button>
+                                    <button class="btn-danger" onclick="evaluateGoal('${goalId}', '${goal.ownerUid}', ${goal.points}, false)">Falhou</button>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        // Minhas metas
+                        if (evalData) {
+                            actionHtml = `<span style="color: ${evalData.completed ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight:bold;">
+                                ${evalData.completed ? '✅ Seu parceiro confirmou!' : '❌ Seu parceiro marcou falha!'}
+                            </span>`;
+                        } else {
+                            actionHtml = `<span style="color: #a8a8b3; font-size: 12px;">Aguardando avaliação do parceiro(a)...</span>`;
+                        }
+                    }
+
+                    list.innerHTML += `
+                        <div class="goal-item">
+                            <div class="goal-header">
+                                <strong>${goal.title}</strong>
+                                <span class="goal-points">${goal.points} pts</span>
+                            </div>
+                            <div style="font-size: 12px; color: #8257e5;">${isMyGoal ? 'Minha Meta' : 'Meta do Parceiro(a)'}</div>
+                            ${actionHtml}
+                        </div>
+                    `;
+                });
+                
+                if(list.innerHTML === '') list.innerHTML = '<p style="color:#a8a8b3;">Nenhuma meta cadastrada.</p>';
+            });
+        }
+
+        // Salvar Avaliação
+        window.evaluateGoal = async (goalId, ownerUid, points, completed) => {
+            const evalId = `${todayStr}_${goalId}`;
+            await setDoc(doc(db, "evaluations", evalId), {
+                date: todayStr,
+                goalId,
+                ownerUid,
+                completed,
+                pointsEarned: completed ? points : 0
+            });
+            Swal.fire({
+                title: completed ? 'Boa!' : 'Ixi...',
+                text: completed ? 'Pontos garantidos!' : 'Preparando a consequência...',
+                icon: completed ? 'success' : 'warning',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        };
+
+        // Ranking e Checagem de Consequências
+        function loadRanking() {
+            onSnapshot(collection(db, "evaluations"), (snapshot) => {
+                let scores = {};
+                let failedToday = [];
+
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (!scores[data.ownerUid]) scores[data.ownerUid] = 0;
+                    scores[data.ownerUid] += data.pointsEarned;
+
+                    if (data.date === todayStr && data.completed === false) {
+                        failedToday.push(data.ownerUid);
+                    }
+                });
+
+                // Atualizar Placar
+                const list = document.getElementById('ranking-list');
+                list.innerHTML = '';
+                for (const [uid, score] of Object.entries(scores)) {
+                    const name = usersData[uid]?.name || 'Usuário';
+                    list.innerHTML += `
+                        <li class="ranking-item">
+                            <span><i class="fa-solid fa-user"></i> ${name}</span>
+                            <span class="goal-points">${score} pts</span>
+                        </li>
+                    `;
+                }
+
+                // Alerta de Consequência
+                const consequenceBox = document.getElementById('consequence-box');
+                if (failedToday.length > 0) {
+                    const nomes = [...new Set(failedToday)].map(uid => usersData[uid]?.name).join(' e ');
+                    document.getElementById('consequence-text').innerText = `${nomes} falhou em pelo menos uma meta hoje e deve pagar a consequência!`;
+                    consequenceBox.style.display = 'block';
+                } else {
+                    consequenceBox.style.display = 'none';
+                }
+            });
+        }
+
+        // Scripts de Interface
+        window.toggleMenu = () => {
+            document.getElementById('sidebar').classList.toggle('active');
+        };
+
+        window.showSection = (id) => {
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('sidebar').classList.remove('active'); // Retrai o menu
+        };
+    </script>
+</body>
+</html>
