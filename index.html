@@ -29,7 +29,7 @@
         .user-info { display: flex; align-items: center; gap: 10px; }
         .user-info img { width: 35px; height: 35px; border-radius: 50%; display: none; }
 
-        /* Menu Lateral Retrátil (Vertical) */
+        /* Menu Lateral Retrátil */
         .sidebar { position: fixed; top: 0; left: -260px; width: 260px; height: 100vh; background-color: var(--surface-color); padding-top: 70px; transition: left 0.3s ease; z-index: 9; border-right: 1px solid #323238; display: flex; flex-direction: column; }
         .sidebar.active { left: 0; }
         .sidebar a { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 16px; border-bottom: 1px solid #323238; display: flex; align-items: center; gap: 15px; }
@@ -54,7 +54,7 @@
         .btn-danger { background-color: var(--danger-color); flex: 1; }
         .btn-small { width: auto; padding: 6px 12px; font-size: 14px; }
         
-        /* Lista de Metas */
+        /* Listas */
         .goal-item { display: flex; flex-direction: column; gap: 10px; padding: 15px 0; border-bottom: 1px solid #323238; }
         .goal-item:last-child { border-bottom: none; }
         .goal-header { display: flex; justify-content: space-between; align-items: center; }
@@ -62,7 +62,8 @@
         .actions { display: flex; gap: 10px; margin-top: 10px; }
 
         /* Consequência e Ranking */
-        .consequence-alert { background: linear-gradient(45deg, var(--danger-color), #b33939); color: white; padding: 20px; border-radius: var(--border-radius); text-align: center; margin-bottom: 20px; display: none; animation: pulse 2s infinite; }
+        .consequence-alert { background: linear-gradient(45deg, var(--danger-color), #b33939); color: white; padding: 20px; border-radius: var(--border-radius); text-align: left; margin-bottom: 20px; display: none; animation: pulse 2s infinite; }
+        .consequence-alert h3 { text-align: center; margin-bottom: 10px; }
         .ranking-list { list-style: none; }
         .ranking-item { display: flex; justify-content: space-between; padding: 15px; background-color: #29292e; margin-bottom: 10px; border-radius: var(--border-radius); align-items: center; font-weight: bold; font-size: 18px; }
 
@@ -113,8 +114,8 @@
 
             <section id="sec-ranking" class="section">
                 <div id="consequence-box" class="consequence-alert">
-                    <h3><i class="fa-solid fa-triangle-exclamation"></i> Consequência Hoje!</h3>
-                    <p id="consequence-text" style="margin-top: 10px;">Alguém falhou nas metas de hoje e terá que arcar com as consequências!</p>
+                    <h3><i class="fa-solid fa-triangle-exclamation"></i> Hora de Pagar!</h3>
+                    <div id="consequence-text" style="margin-top: 10px; font-size: 15px;"></div>
                 </div>
                 <div class="card">
                     <h3><i class="fa-solid fa-crown"></i> Placar Geral</h3>
@@ -127,23 +128,33 @@
                     <h3>Adicionar Nova Meta</h3>
                     <input type="text" id="goal-title" placeholder="Ex: Ir à academia, Ler 10 páginas...">
                     <input type="number" id="goal-points" placeholder="Pontuação (Ex: 10)">
-                    <select id="goal-owner">
-                        <option value="">Carregando usuários...</option>
-                    </select>
-                    <button id="btn-save-goal" class="btn-primary"><i class="fa-solid fa-plus"></i> Salvar Meta</button>
+                    <button class="btn-primary" onclick="addGoal()"><i class="fa-solid fa-plus"></i> Salvar Meta</button>
                 </div>
+
+                <div class="card">
+                    <h3><i class="fa-solid fa-dharmachakra"></i> Adicionar à Roleta</h3>
+                    <p style="font-size: 12px; color: #a8a8b3; margin-bottom: 10px;">Se alguém falhar no dia, uma dessas consequências será sorteada automaticamente.</p>
+                    <input type="text" id="random-consequence" placeholder="Ex: Pagar o lanche, Fazer massagem...">
+                    <button class="btn-primary" onclick="addConsequence()"><i class="fa-solid fa-plus"></i> Salvar na Roleta</button>
+                </div>
+
                 <div class="card">
                     <h3>Metas Cadastradas</h3>
                     <div id="goals-list"></div>
+                </div>
+
+                <div class="card">
+                    <h3>Roleta de Consequências</h3>
+                    <div id="consequences-list"></div>
                 </div>
             </section>
         </main>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD_thF3Zi_guGJORQWBVTShTb-A23i060Q",
@@ -160,9 +171,9 @@
 
         let currentUser = null;
         let usersData = {}; 
+        let consequencesPool = [];
         const todayStr = new Date().toISOString().split('T')[0];
 
-        // Autenticação
         document.getElementById('btn-login').addEventListener('click', () => {
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider).catch(error => console.error(error));
@@ -178,7 +189,6 @@
                 document.getElementById('user-pic').src = user.photoURL;
                 document.getElementById('user-pic').style.display = 'block';
                 
-                // Salva usuário no banco para o dropdown
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid, name: user.displayName, email: user.email
                 }, { merge: true });
@@ -187,6 +197,7 @@
                 loadDailyEvaluations();
                 loadRanking();
                 loadManageGoals();
+                loadConsequences();
             } else {
                 document.getElementById('login-screen').classList.add('active');
                 document.getElementById('app-screen').style.display = 'none';
@@ -194,46 +205,49 @@
             }
         });
 
-        // Carregar Usuários para o Select
         async function loadUsers() {
             const q = query(collection(db, "users"));
             onSnapshot(q, (snapshot) => {
-                const select = document.getElementById('goal-owner');
-                select.innerHTML = '';
                 snapshot.forEach(doc => {
                     usersData[doc.id] = doc.data();
-                    select.innerHTML += `<option value="${doc.id}">${doc.data().name} (${doc.id === currentUser.uid ? 'Você' : 'Parceiro'})</option>`;
                 });
             });
         }
 
-        // Adicionar Meta
-        document.getElementById('btn-save-goal').addEventListener('click', async () => {
+        // Adicionar Meta (Automático para o usuário logado)
+        window.addGoal = async () => {
             const title = document.getElementById('goal-title').value;
             const points = parseInt(document.getElementById('goal-points').value);
-            const ownerUid = document.getElementById('goal-owner').value;
 
-            if (!title || !points || !ownerUid) return Swal.fire('Erro', 'Preencha todos os campos.', 'error');
+            if (!title || !points) return Swal.fire('Erro', 'Preencha todos os campos da meta.', 'error');
 
-            try {
-                await addDoc(collection(db, "goals"), { title, points, ownerUid });
-                document.getElementById('goal-title').value = '';
-                document.getElementById('goal-points').value = '';
-                Swal.fire('Sucesso', 'Meta adicionada!', 'success');
-            } catch (error) {
-                console.error(error);
-                Swal.fire('Erro', 'Não foi possível salvar no banco de dados: ' + error.message, 'error');
-            }
-        });
+            await addDoc(collection(db, "goals"), { title, points, ownerUid: currentUser.uid });
+            document.getElementById('goal-title').value = '';
+            document.getElementById('goal-points').value = '';
+            Swal.fire('Sucesso', 'Meta adicionada!', 'success');
+        };
 
-        // Excluir Meta
         window.deleteGoal = async (id) => {
             if(confirm('Tem certeza que deseja excluir esta meta?')) {
                 await deleteDoc(doc(db, "goals", id));
             }
         };
 
-        // Carregar Metas no Gerenciador
+        window.addConsequence = async () => {
+            const text = document.getElementById('random-consequence').value;
+            if (!text) return Swal.fire('Erro', 'Digite a consequência.', 'error');
+
+            await addDoc(collection(db, "consequences"), { text });
+            document.getElementById('random-consequence').value = '';
+            Swal.fire('Sucesso', 'Adicionado à roleta!', 'success');
+        };
+
+        window.deleteConsequence = async (id) => {
+            if(confirm('Tem certeza que deseja excluir da roleta?')) {
+                await deleteDoc(doc(db, "consequences", id));
+            }
+        };
+
         function loadManageGoals() {
             const q = query(collection(db, "goals"));
             onSnapshot(q, (snapshot) => {
@@ -249,17 +263,36 @@
                                 <span class="goal-points">${goal.points} pts</span>
                             </div>
                             <div style="font-size:12px; color:#a8a8b3;">De: ${ownerName}</div>
-                            <button class="btn-danger btn-small" onclick="deleteGoal('${docSnap.id}')"><i class="fa-solid fa-trash"></i> Excluir</button>
+                            <button class="btn-danger btn-small" onclick="deleteGoal('${docSnap.id}')" style="margin-top:10px;"><i class="fa-solid fa-trash"></i> Excluir</button>
                         </div>
                     `;
                 });
+                if(list.innerHTML === '') list.innerHTML = '<p style="color:#a8a8b3; font-size:14px;">Nenhuma meta cadastrada.</p>';
             });
         }
 
-        // Carregar Avaliações de Hoje
+        function loadConsequences() {
+            const q = query(collection(db, "consequences"));
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('consequences-list');
+                list.innerHTML = '';
+                consequencesPool = [];
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    consequencesPool.push(data.text);
+                    list.innerHTML += `
+                        <div class="goal-item" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 10px 0;">
+                            <span style="font-size: 15px;">${data.text}</span>
+                            <button class="btn-danger btn-small" onclick="deleteConsequence('${docSnap.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `;
+                });
+                if(list.innerHTML === '') list.innerHTML = '<p style="color:#a8a8b3; font-size:14px;">Roleta vazia. Adicione penalidades!</p>';
+            });
+        }
+
         function loadDailyEvaluations() {
             onSnapshot(collection(db, "goals"), async (goalsSnapshot) => {
-                // Puxar as avaliações já feitas hoje
                 const evalsQ = query(collection(db, "evaluations"), where("date", "==", todayStr));
                 const evalsSnapshot = await getDocs(evalsQ);
                 const todayEvals = {};
@@ -274,8 +307,6 @@
                     const isMyGoal = goal.ownerUid === currentUser.uid;
                     const evalData = todayEvals[goalId];
 
-                    // Eu só avalio as metas que não são minhas (Apenas as do parceiro).
-                    // As minhas metas só aparecem para leitura (para ver se ela já avaliou).
                     let actionHtml = '';
 
                     if (!isMyGoal) {
@@ -292,7 +323,6 @@
                             `;
                         }
                     } else {
-                        // Minhas metas
                         if (evalData) {
                             actionHtml = `<span style="color: ${evalData.completed ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight:bold;">
                                 ${evalData.completed ? '✅ Seu parceiro confirmou!' : '❌ Seu parceiro marcou falha!'}
@@ -318,7 +348,6 @@
             });
         }
 
-        // Salvar Avaliação
         window.evaluateGoal = async (goalId, ownerUid, points, completed) => {
             const evalId = `${todayStr}_${goalId}`;
             await setDoc(doc(db, "evaluations", evalId), {
@@ -328,32 +357,43 @@
                 completed,
                 pointsEarned: completed ? points : 0
             });
+
+            if (!completed) {
+                const dailyConsRef = doc(db, "daily_consequences", `${todayStr}_${ownerUid}`);
+                const dailyConsSnap = await getDoc(dailyConsRef);
+
+                if (!dailyConsSnap.exists()) {
+                    let randomCons = "Sorte grande! Nenhuma consequência cadastrada na roleta!";
+                    if (consequencesPool.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * consequencesPool.length);
+                        randomCons = consequencesPool[randomIndex];
+                    }
+                    await setDoc(dailyConsRef, {
+                        date: todayStr,
+                        ownerUid: ownerUid,
+                        consequence: randomCons
+                    });
+                }
+            }
+
             Swal.fire({
                 title: completed ? 'Boa!' : 'Ixi...',
-                text: completed ? 'Pontos garantidos!' : 'Preparando a consequência...',
+                text: completed ? 'Pontos garantidos!' : 'Marcado como falha. Sorteio realizado!',
                 icon: completed ? 'success' : 'warning',
                 timer: 1500,
                 showConfirmButton: false
             });
         };
 
-        // Ranking e Checagem de Consequências
         function loadRanking() {
             onSnapshot(collection(db, "evaluations"), (snapshot) => {
                 let scores = {};
-                let failedToday = [];
-
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
                     if (!scores[data.ownerUid]) scores[data.ownerUid] = 0;
                     scores[data.ownerUid] += data.pointsEarned;
-
-                    if (data.date === todayStr && data.completed === false) {
-                        failedToday.push(data.ownerUid);
-                    }
                 });
 
-                // Atualizar Placar
                 const list = document.getElementById('ranking-list');
                 list.innerHTML = '';
                 for (const [uid, score] of Object.entries(scores)) {
@@ -365,12 +405,25 @@
                         </li>
                     `;
                 }
+            });
 
-                // Alerta de Consequência
+            const qCons = query(collection(db, "daily_consequences"), where("date", "==", todayStr));
+            onSnapshot(qCons, (snapshot) => {
                 const consequenceBox = document.getElementById('consequence-box');
-                if (failedToday.length > 0) {
-                    const nomes = [...new Set(failedToday)].map(uid => usersData[uid]?.name).join(' e ');
-                    document.getElementById('consequence-text').innerText = `${nomes} falhou em pelo menos uma meta hoje e deve pagar a consequência!`;
+                let failedUsers = [];
+
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    failedUsers.push({ uid: data.ownerUid, consequence: data.consequence });
+                });
+
+                if (failedUsers.length > 0) {
+                    let htmlConsequences = failedUsers.map(f => {
+                        const nome = usersData[f.uid]?.name || 'Alguém';
+                        return `• <strong>${nome}</strong>: ${f.consequence}`;
+                    }).join('<br><br>');
+                    
+                    document.getElementById('consequence-text').innerHTML = `Sorteio de hoje:<br><br>${htmlConsequences}`;
                     consequenceBox.style.display = 'block';
                 } else {
                     consequenceBox.style.display = 'none';
@@ -378,7 +431,6 @@
             });
         }
 
-        // Scripts de Interface
         window.toggleMenu = () => {
             document.getElementById('sidebar').classList.toggle('active');
         };
@@ -386,7 +438,7 @@
         window.showSection = (id) => {
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            document.getElementById('sidebar').classList.remove('active'); // Retrai o menu
+            document.getElementById('sidebar').classList.remove('active');
         };
     </script>
 </body>
