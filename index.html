@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Metas do Casal</title>
+    <!-- Ícones e Alertas -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
@@ -78,6 +79,7 @@
 </head>
 <body>
 
+    <!-- Tela de Login -->
     <div id="login-screen" class="section active">
         <div style="max-width: 400px; margin: 0 auto;">
             <i class="fa-solid fa-heart" style="font-size: 50px; color: var(--primary-color); margin-bottom: 20px;"></i>
@@ -87,6 +89,7 @@
         </div>
     </div>
 
+    <!-- App Principal -->
     <div id="app-screen" style="display: none;">
         <header>
             <i class="fa-solid fa-bars menu-toggle" onclick="toggleMenu()"></i>
@@ -96,6 +99,7 @@
             </div>
         </header>
 
+        <!-- Menu Lateral -->
         <nav id="sidebar" class="sidebar">
             <a href="#" onclick="showSection('sec-avaliar')"><i class="fa-solid fa-list-check"></i> Avaliar Hoje</a>
             <a href="#" onclick="showSection('sec-ranking')"><i class="fa-solid fa-trophy"></i> Ranking Diário</a>
@@ -104,6 +108,7 @@
         </nav>
 
         <main>
+            <!-- Seção 1: Avaliar -->
             <section id="sec-avaliar" class="section active">
                 <div class="card">
                     <h3><i class="fa-solid fa-clipboard-check"></i> Avaliações de Hoje</h3>
@@ -112,6 +117,7 @@
                 </div>
             </section>
 
+            <!-- Seção 2: Ranking -->
             <section id="sec-ranking" class="section">
                 <div id="consequence-box" class="consequence-alert">
                     <h3><i class="fa-solid fa-triangle-exclamation"></i> Hora de Pagar!</h3>
@@ -123,17 +129,17 @@
                 </div>
             </section>
 
+            <!-- Seção 3: Gerenciar Metas e Consequências -->
             <section id="sec-gerenciar" class="section">
+                <!-- Cadastro de Metas -->
                 <div class="card">
                     <h3>Adicionar Nova Meta</h3>
                     <input type="text" id="goal-title" placeholder="Ex: Ir à academia, Ler 10 páginas...">
                     <input type="number" id="goal-points" placeholder="Pontuação (Ex: 10)">
-                    <select id="goal-owner">
-                        <option value="">Carregando usuários...</option>
-                    </select>
                     <button class="btn-primary" onclick="addGoal()"><i class="fa-solid fa-plus"></i> Salvar Meta</button>
                 </div>
 
+                <!-- Cadastro de Consequências (Roleta) -->
                 <div class="card">
                     <h3><i class="fa-solid fa-dharmachakra"></i> Adicionar à Roleta</h3>
                     <p style="font-size: 12px; color: #a8a8b3; margin-bottom: 10px;">Se alguém falhar no dia, uma dessas consequências será sorteada automaticamente.</p>
@@ -141,6 +147,7 @@
                     <button class="btn-primary" onclick="addConsequence()"><i class="fa-solid fa-plus"></i> Salvar na Roleta</button>
                 </div>
 
+                <!-- Listas -->
                 <div class="card">
                     <h3>Metas Cadastradas</h3>
                     <div id="goals-list"></div>
@@ -154,10 +161,10 @@
         </main>
     </div>
 
+    <!-- Firebase SDK e Lógica -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
-        // Adicionado o 'getDoc' para fazer a checagem diária
         import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -175,10 +182,9 @@
 
         let currentUser = null;
         let usersData = {}; 
-        let consequencesPool = []; // Array que guarda a roleta
+        let consequencesPool = [];
         const todayStr = new Date().toISOString().split('T')[0];
 
-        // Autenticação
         document.getElementById('btn-login').addEventListener('click', () => {
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider).catch(error => console.error(error));
@@ -202,7 +208,7 @@
                 loadDailyEvaluations();
                 loadRanking();
                 loadManageGoals();
-                loadConsequences(); // Carrega as consequências da roleta
+                loadConsequences();
             } else {
                 document.getElementById('login-screen').classList.add('active');
                 document.getElementById('app-screen').style.display = 'none';
@@ -213,24 +219,20 @@
         async function loadUsers() {
             const q = query(collection(db, "users"));
             onSnapshot(q, (snapshot) => {
-                const select = document.getElementById('goal-owner');
-                select.innerHTML = '';
                 snapshot.forEach(doc => {
                     usersData[doc.id] = doc.data();
-                    select.innerHTML += `<option value="${doc.id}">${doc.data().name} (${doc.id === currentUser.uid ? 'Você' : 'Parceiro'})</option>`;
                 });
             });
         }
 
-        // Adicionar Meta (Sem consequência amarrada)
+        // Adicionar Meta (Automático para o usuário logado)
         window.addGoal = async () => {
             const title = document.getElementById('goal-title').value;
             const points = parseInt(document.getElementById('goal-points').value);
-            const ownerUid = document.getElementById('goal-owner').value;
 
-            if (!title || !points || !ownerUid) return Swal.fire('Erro', 'Preencha todos os campos da meta.', 'error');
+            if (!title || !points) return Swal.fire('Erro', 'Preencha todos os campos da meta.', 'error');
 
-            await addDoc(collection(db, "goals"), { title, points, ownerUid });
+            await addDoc(collection(db, "goals"), { title, points, ownerUid: currentUser.uid });
             document.getElementById('goal-title').value = '';
             document.getElementById('goal-points').value = '';
             Swal.fire('Sucesso', 'Meta adicionada!', 'success');
@@ -242,7 +244,6 @@
             }
         };
 
-        // Adicionar Consequência na Roleta
         window.addConsequence = async () => {
             const text = document.getElementById('random-consequence').value;
             if (!text) return Swal.fire('Erro', 'Digite a consequência.', 'error');
@@ -258,7 +259,6 @@
             }
         };
 
-        // Carregar Metas no Gerenciador
         function loadManageGoals() {
             const q = query(collection(db, "goals"));
             onSnapshot(q, (snapshot) => {
@@ -282,13 +282,12 @@
             });
         }
 
-        // Carregar Roleta
         function loadConsequences() {
             const q = query(collection(db, "consequences"));
             onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('consequences-list');
                 list.innerHTML = '';
-                consequencesPool = []; // Limpa e atualiza o array global
+                consequencesPool = [];
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
                     consequencesPool.push(data.text);
@@ -303,7 +302,6 @@
             });
         }
 
-        // Carregar Avaliações de Hoje
         function loadDailyEvaluations() {
             onSnapshot(collection(db, "goals"), async (goalsSnapshot) => {
                 const evalsQ = query(collection(db, "evaluations"), where("date", "==", todayStr));
@@ -328,7 +326,6 @@
                                 ${evalData.completed ? '<i class="fa-solid fa-check"></i> Você marcou: Cumpriu' : '<i class="fa-solid fa-xmark"></i> Você marcou: Falhou'}
                             </span>`;
                         } else {
-                            // Não passa mais a consequência no botão
                             actionHtml = `
                                 <div class="actions">
                                     <button class="btn-success" onclick="evaluateGoal('${goalId}', '${goal.ownerUid}', ${goal.points}, true)">Cumpriu</button>
@@ -362,11 +359,8 @@
             });
         }
 
-        // Salvar Avaliação e Sortear Consequência se houver falha
         window.evaluateGoal = async (goalId, ownerUid, points, completed) => {
             const evalId = `${todayStr}_${goalId}`;
-            
-            // 1. Salva a avaliação da meta
             await setDoc(doc(db, "evaluations", evalId), {
                 date: todayStr,
                 goalId,
@@ -375,21 +369,16 @@
                 pointsEarned: completed ? points : 0
             });
 
-            // 2. Lógica da roleta se marcou como "Falhou"
             if (!completed) {
-                // Checa se já existe uma consequência sorteada para essa pessoa hoje
                 const dailyConsRef = doc(db, "daily_consequences", `${todayStr}_${ownerUid}`);
                 const dailyConsSnap = await getDoc(dailyConsRef);
 
                 if (!dailyConsSnap.exists()) {
-                    // Sorteia uma consequência aleatória
                     let randomCons = "Sorte grande! Nenhuma consequência cadastrada na roleta!";
                     if (consequencesPool.length > 0) {
                         const randomIndex = Math.floor(Math.random() * consequencesPool.length);
                         randomCons = consequencesPool[randomIndex];
                     }
-                    
-                    // Salva no banco (uma única consequência por pessoa por dia)
                     await setDoc(dailyConsRef, {
                         date: todayStr,
                         ownerUid: ownerUid,
@@ -407,9 +396,7 @@
             });
         };
 
-        // Ranking e Leitura das Consequências Sorteada no Dia
         function loadRanking() {
-            // Placar Geral
             onSnapshot(collection(db, "evaluations"), (snapshot) => {
                 let scores = {};
                 snapshot.forEach(docSnap => {
@@ -431,7 +418,6 @@
                 }
             });
 
-            // Consequências Diárias (Sorteio)
             const qCons = query(collection(db, "daily_consequences"), where("date", "==", todayStr));
             onSnapshot(qCons, (snapshot) => {
                 const consequenceBox = document.getElementById('consequence-box');
