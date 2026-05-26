@@ -79,14 +79,31 @@
                         </div>
                 </div>
 
+                <div class="glass rounded-2xl p-6 shadow-sm border border-white flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold">Sorteio de Premiação 🎁</h2>
+                        <p class="text-slate-500 text-sm">Alcançaram uma meta especial? Sorteie um prêmio cadastrado para o casal!</p>
+                    </div>
+                    <button onclick="drawPremiacao()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-6 rounded-xl transition shadow-md whitespace-nowrap">Sortear Prêmio</button>
+                </div>
+
                 <div class="glass rounded-2xl p-6 shadow-sm border border-white">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <h2 class="text-xl font-bold">Placar Geral</h2>
-                        <select id="filter-period" onchange="loadRanking()" class="p-2 rounded-xl border border-slate-200 bg-white focus:outline-none text-sm font-medium text-slate-700">
-                            <option value="tudo">Todo o Período</option>
-                            <option value="mes">Últimos 30 dias</option>
-                            <option value="semana">Últimos 7 dias</option>
-                        </select>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div id="custom-date-inputs" class="hidden flex items-center gap-2">
+                                <input type="date" id="start-date" onchange="loadRanking()" class="p-2 rounded-xl border border-slate-200 bg-white focus:outline-none text-xs sm:text-sm text-slate-700">
+                                <span class="text-xs text-slate-400">até</span>
+                                <input type="date" id="end-date" onchange="loadRanking()" class="p-2 rounded-xl border border-slate-200 bg-white focus:outline-none text-xs sm:text-sm text-slate-700">
+                            </div>
+                            <select id="filter-period" onchange="handlePeriodChange()" class="p-2 rounded-xl border border-slate-200 bg-white focus:outline-none text-sm font-medium text-slate-700">
+                                <option value="tudo">Todo o Período</option>
+                                <option value="mes">Últimos 30 dias</option>
+                                <option value="semana">Últimos 7 dias</option>
+                                <option value="hoje">Hoje</option>
+                                <option value="custom">Personalizado</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="overflow-hidden rounded-xl border border-slate-100 bg-white">
                         <table class="w-full text-left border-collapse">
@@ -104,7 +121,7 @@
                 </div>
             </section>
 
-            <section id="tab-content-gerenciar" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section id="tab-content-gerenciar" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="glass rounded-2xl p-6 shadow-sm border border-white flex flex-col justify-between">
                     <div>
                         <h2 class="text-xl font-bold mb-4">Gerenciar Metas</h2>
@@ -133,6 +150,16 @@
                         <ul id="crud-lista-consequencias" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
                     </div>
                 </div>
+                <div class="glass rounded-2xl p-6 shadow-sm border border-white flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold mb-4">Gerenciar Premiações</h2>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="input-nova-premiacao" placeholder="Nova premiação..." class="flex-1 p-2.5 text-sm rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-slate-800 transition">
+                            <button onclick="addPremiacao()" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 rounded-xl transition">Adicionar</button>
+                        </div>
+                        <ul id="crud-lista-premiacoes" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
+                    </div>
+                </div>
             </section>
 
         </main>
@@ -147,6 +174,18 @@
                 Nenhuma consequência cadastrada!
             </div>
             <button onclick="closeConsequenceModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2.5 rounded-xl transition">Aceitar Desafio</button>
+        </div>
+    </div>
+
+    <div id="modal-premiacao" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-sm w-full rounded-3xl p-6 shadow-2xl text-center border border-slate-100 scale-95 transform transition duration-300">
+            <span class="text-4xl block mb-3">🎁</span>
+            <h3 class="text-lg font-bold text-slate-900 mb-2">Premiação Sorteada!</h3>
+            <p class="text-slate-500 text-sm mb-4">Parabéns pelo esforço! O prêmio sorteado foi:</p>
+            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-indigo-700 font-semibold text-base mb-6" id="txt-premiacao-drawn">
+                Nenhuma premiação cadastrada!
+            </div>
+            <button onclick="closePremiacaoModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2.5 rounded-xl transition">Aproveitar!</button>
         </div>
     </div>
 
@@ -177,6 +216,7 @@
         // Estado local da Aplicação
         let arrMetas = [];
         let arrConsequencias = [];
+        let arrPremiacoes = [];
         let currentUser = null;
 
         const areaLabels = {
@@ -220,7 +260,7 @@
 
         // Inicialização de Dados pós Login
         async function initApp() {
-            await Promise.all([loadMetas(), loadConsequencias()]);
+            await Promise.all([loadMetas(), loadConsequencias(), loadPremiacoes()]);
             loadRanking();
         }
 
@@ -274,6 +314,31 @@
         window.deleteConsequencia = async function(id) {
             await deleteDoc(doc(db, "consequencias", id));
             await loadConsequencias();
+        }
+
+        // --- SEÇÃO CRUD DE PREMIAÇÕES ---
+        async function loadPremiacoes() {
+            const q = query(collection(db, "premiacoes"), orderBy("createdAt", "asc"));
+            const querySnapshot = await getDocs(q);
+            arrPremiacoes = [];
+            querySnapshot.forEach((doc) => {
+                arrPremiacoes.push({ id: doc.id, ...doc.data() });
+            });
+            renderPremiacoesForms();
+        }
+
+        window.addPremiacao = async function() {
+            const input = document.getElementById('input-nova-premiacao');
+            const txt = input.value.trim();
+            if(!txt) return;
+            await addDoc(collection(db, "premiacoes"), { texto: txt, createdAt: serverTimestamp() });
+            input.value = "";
+            await loadPremiacoes();
+        }
+
+        window.deletePremiacao = async function(id) {
+            await deleteDoc(doc(db, "premiacoes", id));
+            await loadPremiacoes();
         }
 
         // --- RENDERIZADORES DE INTERFACE (HTML DINÂMICO) ---
@@ -337,6 +402,16 @@
                 <li class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 text-sm">
                     <span class="truncate pr-2">${c.texto}</span>
                     <button onclick="deleteConsequencia('${c.id}')" class="text-xs bg-rose-50 text-rose-600 font-medium px-2 py-1 rounded-lg hover:bg-rose-100 transition">Remover</button>
+                </li>
+            `).join('');
+        }
+
+        function renderPremiacoesForms() {
+            const containerCrud = document.getElementById('crud-lista-premiacoes');
+            containerCrud.innerHTML = arrPremiacoes.map(p => `
+                <li class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 text-sm">
+                    <span class="truncate pr-2">${p.texto}</span>
+                    <button onclick="deletePremiacao('${p.id}')" class="text-xs bg-rose-50 text-rose-600 font-medium px-2 py-1 rounded-lg hover:bg-rose-100 transition">Remover</button>
                 </li>
             `).join('');
         }
@@ -415,6 +490,35 @@
             document.getElementById('modal-consequence').classList.add('hidden');
         }
 
+        window.drawPremiacao = function() {
+            const modal = document.getElementById('modal-premiacao');
+            const txtBox = document.getElementById('txt-premiacao-drawn');
+            
+            if(arrPremiacoes.length > 0) {
+                const randIndex = Math.floor(Math.random() * arrPremiacoes.length);
+                txtBox.innerText = arrPremiacoes[randIndex].texto;
+            } else {
+                txtBox.innerText = "Nenhuma premiação cadastrada no sistema!";
+            }
+            modal.classList.remove('hidden');
+        }
+
+        window.closePremiacaoModal = function() {
+            document.getElementById('modal-premiacao').classList.add('hidden');
+        }
+
+        // --- MANIPULAÇÃO DA ALTERAÇÃO DE PERÍODO ---
+        window.handlePeriodChange = function() {
+            const period = document.getElementById('filter-period').value;
+            const customInputs = document.getElementById('custom-date-inputs');
+            if (period === 'custom') {
+                customInputs.classList.remove('hidden');
+            } else {
+                customInputs.classList.add('hidden');
+            }
+            loadRanking();
+        }
+
         // --- LÓGICA DO RANKING ACUMULADO POR PERÍODO & DASHBOARD ---
         window.loadRanking = async function() {
             const period = document.getElementById('filter-period').value;
@@ -433,6 +537,23 @@
                 logs = logs.filter(log => (now - log.timestamp) <= (7 * umDia));
             } else if (period === "mes") {
                 logs = logs.filter(log => (now - log.timestamp) <= (30 * umDia));
+            } else if (period === "hoje") {
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+                const endOfToday = new Date();
+                endOfToday.setHours(23, 59, 59, 999);
+                logs = logs.filter(log => log.timestamp >= startOfToday.getTime() && log.timestamp <= endOfToday.getTime());
+            } else if (period === "custom") {
+                const startVal = document.getElementById('start-date').value;
+                const endVal = document.getElementById('end-date').value;
+                if (startVal) {
+                    const startTs = new Date(startVal + 'T00:00:00').getTime();
+                    logs = logs.filter(log => log.timestamp >= startTs);
+                }
+                if (endVal) {
+                    const endTs = new Date(endVal + 'T23:59:59').getTime();
+                    logs = logs.filter(log => log.timestamp <= endTs);
+                }
             }
 
             // --- CÁLCULO DO DASHBOARD POR ÁREAS ---
