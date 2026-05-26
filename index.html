@@ -3,443 +3,424 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metas do Casal</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+    <title>Nosso Mural de Metas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Variáveis de Cores e Design Moderno */
-        :root {
-            --bg-color: #121214;
-            --surface-color: #202024;
-            --primary-color: #8257e5;
-            --text-color: #e1e1e6;
-            --success-color: #00b37e;
-            --danger-color: #f75a68;
-            --border-radius: 8px;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; }
-        
-        body { background-color: var(--bg-color); color: var(--text-color); overflow-x: hidden; }
-
-        /* Cabeçalho */
-        header { background-color: var(--surface-color); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #323238; position: sticky; top: 0; z-index: 10; }
-        .menu-toggle { font-size: 24px; color: var(--text-color); cursor: pointer; }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .user-info img { width: 35px; height: 35px; border-radius: 50%; display: none; }
-
-        /* Menu Lateral Retrátil */
-        .sidebar { position: fixed; top: 0; left: -260px; width: 260px; height: 100vh; background-color: var(--surface-color); padding-top: 70px; transition: left 0.3s ease; z-index: 9; border-right: 1px solid #323238; display: flex; flex-direction: column; }
-        .sidebar.active { left: 0; }
-        .sidebar a { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 16px; border-bottom: 1px solid #323238; display: flex; align-items: center; gap: 15px; }
-        .sidebar a:hover { background-color: #29292e; color: var(--primary-color); }
-        
-        /* Layout Principal Compacto */
-        main { padding: 20px; max-width: 600px; margin: 0 auto; transition: margin-left 0.3s ease; }
-        .section { display: none; }
-        .section.active { display: block; }
-        
-        /* Cartões */
-        .card { background-color: var(--surface-color); padding: 15px; border-radius: var(--border-radius); margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .card h3 { margin-bottom: 10px; font-size: 18px; color: var(--primary-color); }
-        
-        /* Formulários e Botões */
-        input, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #323238; border-radius: var(--border-radius); background-color: #121214; color: var(--text-color); font-size: 16px; }
-        button { width: 100%; padding: 12px; border: none; border-radius: var(--border-radius); font-size: 16px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        button:hover { opacity: 0.9; }
-        .btn-primary { background-color: var(--primary-color); }
-        .btn-google { background-color: #ea4335; margin-top: 50px; }
-        .btn-success { background-color: var(--success-color); flex: 1; }
-        .btn-danger { background-color: var(--danger-color); flex: 1; }
-        .btn-small { width: auto; padding: 6px 12px; font-size: 14px; }
-        
-        /* Listas */
-        .goal-item { display: flex; flex-direction: column; gap: 10px; padding: 15px 0; border-bottom: 1px solid #323238; }
-        .goal-item:last-child { border-bottom: none; }
-        .goal-header { display: flex; justify-content: space-between; align-items: center; }
-        .goal-points { background-color: var(--primary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .actions { display: flex; gap: 10px; margin-top: 10px; }
-
-        /* Consequência e Ranking */
-        .consequence-alert { background: linear-gradient(45deg, var(--danger-color), #b33939); color: white; padding: 20px; border-radius: var(--border-radius); text-align: left; margin-bottom: 20px; display: none; animation: pulse 2s infinite; }
-        .consequence-alert h3 { text-align: center; margin-bottom: 10px; }
-        .ranking-list { list-style: none; }
-        .ranking-item { display: flex; justify-content: space-between; padding: 15px; background-color: #29292e; margin-bottom: 10px; border-radius: var(--border-radius); align-items: center; font-weight: bold; font-size: 18px; }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-
-        #login-screen { text-align: center; padding-top: 50px; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.25); }
     </style>
 </head>
-<body>
+<body class="bg-gradient-to-br from-slate-50 via-rose-50 to-indigo-50 min-h-screen text-slate-800 flex flex-col justify-between">
 
-    <div id="login-screen" class="section active">
-        <div style="max-width: 400px; margin: 0 auto;">
-            <i class="fa-solid fa-heart" style="font-size: 50px; color: var(--primary-color); margin-bottom: 20px;"></i>
-            <h2>Metas do Casal</h2>
-            <p style="color: #a8a8b3; margin-top: 10px;">Faça login para acompanhar as metas.</p>
-            <button id="btn-login" class="btn-google"><i class="fa-brands fa-google"></i> Entrar com Google</button>
+    <div id="login-screen" class="flex-1 flex items-center justify-center p-4">
+        <div class="glass max-w-md w-full rounded-3xl p-8 shadow-xl text-center border border-white">
+            <div class="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl">❤️</div>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 mb-2">Nosso Espaço</h1>
+            <p class="text-slate-500 mb-8 text-sm">Acompanhe suas metas diárias, acumule pontos e divirta-se em casal.</p>
+            <button id="btn-login" class="w-full bg-white text-slate-700 font-medium py-3 px-4 rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 transition duration-200 flex items-center justify-center gap-3">
+                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5.04c1.65 0 3.13.57 4.3 1.69l3.22-3.22C17.56 1.63 14.98 1 12 1 7.28 1 3.26 3.72 1.3 7.7l3.77 2.92c.9-2.7 3.4-4.58 6.93-4.58z"/>
+                    <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.43h6.45c-.28 1.47-1.11 2.72-2.36 3.56l3.66 2.84c2.14-1.98 3.38-4.89 3.38-8.49z"/>
+                    <path fill="#FBBC05" d="M5.07 14.78c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2L1.3 7.46C.48 9.11 0 10.97 0 12s.48 2.89 1.3 4.54l3.77-2.76z"/>
+                    <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.92l-3.66-2.84c-1.01.67-2.31 1.08-4.3 1.08-3.53 0-6.03-1.88-6.93-4.58L1.3 16.66C3.26 20.28 7.28 23 12 23z"/>
+                </svg>
+                Entrar com o Google
+            </button>
         </div>
     </div>
 
-    <div id="app-screen" style="display: none;">
-        <header>
-            <i class="fa-solid fa-bars menu-toggle" onclick="toggleMenu()"></i>
-            <h3>Metas do Casal</h3>
-            <div class="user-info">
-                <img id="user-pic" src="" alt="Foto">
+    <div id="main-app" class="hidden flex-1 flex flex-col">
+        <header class="glass sticky top-0 z-50 border-b border-slate-100 px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-xl">✨</span>
+                <span class="font-bold text-slate-900 tracking-tight">Metas de Casal</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="user-name" class="text-sm font-medium text-slate-600 hidden sm:inline"></span>
+                <button id="btn-logout" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium py-2 px-3 rounded-lg transition">Sair</button>
             </div>
         </header>
 
-        <nav id="sidebar" class="sidebar">
-            <a href="#" onclick="showSection('sec-avaliar')"><i class="fa-solid fa-list-check"></i> Avaliar Hoje</a>
-            <a href="#" onclick="showSection('sec-ranking')"><i class="fa-solid fa-trophy"></i> Ranking Diário</a>
-            <a href="#" onclick="showSection('sec-gerenciar')"><i class="fa-solid fa-gear"></i> Gerenciar Metas</a>
-            <a href="#" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
+        <nav class="max-w-4xl w-full mx-auto px-4 mt-6">
+            <div class="bg-slate-200/60 p-1 rounded-xl flex gap-1">
+                <button onclick="switchTab('responder')" id="nav-responder" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition bg-white text-slate-900 shadow-sm">Responder</button>
+                <button onclick="switchTab('ranking')" id="nav-ranking" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition text-slate-600 hover:text-slate-900">Ranking</button>
+                <button onclick="switchTab('gerenciar')" id="nav-gerenciar" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition text-slate-600 hover:text-slate-900">Gerenciar</button>
+            </div>
         </nav>
 
-        <main>
-            <section id="sec-avaliar" class="section active">
-                <div class="card">
-                    <h3><i class="fa-solid fa-clipboard-check"></i> Avaliações de Hoje</h3>
-                    <p style="font-size: 14px; color: #a8a8b3; margin-bottom: 15px;">Avalie as metas do seu parceiro(a).</p>
-                    <div id="evaluation-list">Carregando...</div>
+        <main class="max-w-4xl w-full mx-auto p-4 flex-1">
+            
+            <section id="tab-content-responder" class="tab-content block space-y-6">
+                <div class="glass rounded-2xl p-6 shadow-sm border border-white">
+                    <h2 class="text-xl font-bold mb-4">Avaliação Diária</h2>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Quem você está avaliando hoje?</label>
+                    <input type="text" id="target-partner" placeholder="Ex: Nome da sua namorada" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white/50 mb-6 transition">
+                    
+                    <form id="form-metas" class="space-y-6">
+                        <div id="lista-metas-responder" class="space-y-4">
+                            <p class="text-slate-400 text-sm italic">Nenhuma meta cadastrada ainda. Vá na aba Gerenciar.</p>
+                        </div>
+                        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 px-4 rounded-xl transition shadow-md mt-6">Enviar Avaliação</button>
+                    </form>
                 </div>
             </section>
 
-            <section id="sec-ranking" class="section">
-                <div id="consequence-box" class="consequence-alert">
-                    <h3><i class="fa-solid fa-triangle-exclamation"></i> Hora de Pagar!</h3>
-                    <div id="consequence-text" style="margin-top: 10px; font-size: 15px;"></div>
+            <section id="tab-content-ranking" class="tab-content hidden space-y-6">
+                <div class="glass rounded-2xl p-6 shadow-sm border border-white">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <h2 class="text-xl font-bold">Placar Geral</h2>
+                        <select id="filter-period" onchange="loadRanking()" class="p-2 rounded-xl border border-slate-200 bg-white focus:outline-none text-sm font-medium text-slate-700">
+                            <option value="tudo">Todo o Período</option>
+                            <option value="mes">Últimos 30 dias</option>
+                            <option value="semana">Últimos 7 dias</option>
+                        </select>
+                    </div>
+                    <div class="overflow-hidden rounded-xl border border-slate-100 bg-white">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                    <th class="p-4">Posição</th>
+                                    <th class="p-4">Nome</th>
+                                    <th class="p-4 text-right">Pontuação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-ranking" class="divide-y divide-slate-100 text-sm">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="card">
-                    <h3><i class="fa-solid fa-crown"></i> Placar Geral</h3>
-                    <ul class="ranking-list" id="ranking-list">Carregando...</ul>
+            </section>
+
+            <section id="tab-content-gerenciar" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass rounded-2xl p-6 shadow-sm border border-white flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold mb-4">Gerenciar Metas</h2>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="input-nova-meta" placeholder="Nova meta diária..." class="flex-1 p-2.5 text-sm rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-slate-800 transition">
+                            <button onclick="addMeta()" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 rounded-xl transition">Adicionar</button>
+                        </div>
+                        <ul id="crud-lista-metas" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
+                    </div>
+                </div>
+                <div class="glass rounded-2xl p-6 shadow-sm border border-white flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold mb-4">Gerenciar Consequências</h2>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="input-nova-consequencia" placeholder="Nova consequência..." class="flex-1 p-2.5 text-sm rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-slate-800 transition">
+                            <button onclick="addConsequencia()" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 rounded-xl transition">Adicionar</button>
+                        </div>
+                        <ul id="crud-lista-consequencias" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
+                    </div>
                 </div>
             </section>
 
-            <section id="sec-gerenciar" class="section">
-                <div class="card">
-                    <h3>Adicionar Nova Meta</h3>
-                    <input type="text" id="goal-title" placeholder="Ex: Ir à academia, Ler 10 páginas...">
-                    <input type="number" id="goal-points" placeholder="Pontuação (Ex: 10)">
-                    <button class="btn-primary" onclick="addGoal()"><i class="fa-solid fa-plus"></i> Salvar Meta</button>
-                </div>
-
-                <div class="card">
-                    <h3><i class="fa-solid fa-dharmachakra"></i> Adicionar à Roleta</h3>
-                    <p style="font-size: 12px; color: #a8a8b3; margin-bottom: 10px;">Se alguém falhar no dia, uma dessas consequências será sorteada automaticamente.</p>
-                    <input type="text" id="random-consequence" placeholder="Ex: Pagar o lanche, Fazer massagem...">
-                    <button class="btn-primary" onclick="addConsequence()"><i class="fa-solid fa-plus"></i> Salvar na Roleta</button>
-                </div>
-
-                <div class="card">
-                    <h3>Metas Cadastradas</h3>
-                    <div id="goals-list"></div>
-                </div>
-
-                <div class="card">
-                    <h3>Roleta de Consequências</h3>
-                    <div id="consequences-list"></div>
-                </div>
-            </section>
         </main>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    <div id="modal-consequence" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-sm w-full rounded-3xl p-6 shadow-2xl text-center border border-slate-100 scale-95 transform transition duration-300">
+            <span class="text-4xl block mb-3">🎲</span>
+            <h3 class="text-lg font-bold text-slate-900 mb-2">Meta não cumprida!</h3>
+            <p class="text-slate-500 text-sm mb-4">Como alguma meta ficou incompleta ou não foi feita, você sorteou uma consequência:</p>
+            <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-rose-700 font-semibold text-base mb-6" id="txt-consequence-drawn">
+                Nenhuma consequência cadastrada!
+            </div>
+            <button onclick="closeConsequenceModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2.5 rounded-xl transition">Aceitar Desafio</button>
+        </div>
+    </div>
 
+    <footer class="p-4 text-center text-xs text-slate-400">
+        Feito com ❤️ para nós dois.
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+        // Configuração fornecida pelo usuário
         const firebaseConfig = {
-            apiKey: "AIzaSyD_thF3Zi_guGJORQWBVTShTb-A23i060Q",
-            authDomain: "metas-34ada.firebaseapp.com",
-            projectId: "metas-34ada",
-            storageBucket: "metas-34ada.firebasestorage.app",
-            messagingSenderId: "172329013685",
-            appId: "1:172329013685:web:dce54b733c1483cf3249fc"
+            apiKey: "AIzaSyCx-jWuHvjqGAF0gD9nc1vSReeO9hzcFv0",
+            authDomain: "meta-fbe99.firebaseapp.com",
+            projectId: "meta-fbe99",
+            storageBucket: "meta-fbe99.firebasestorage.app",
+            messagingSenderId: "188722775704",
+            appId: "1:188722775704:web:292841d5094a4ed76c32ed"
         };
 
+        // Inicializando o Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // Estado local da Aplicação
+        let arrMetas = [];
+        let arrConsequencias = [];
         let currentUser = null;
-        let usersData = {}; 
-        let consequencesPool = [];
-        const todayStr = new Date().toISOString().split('T')[0];
 
-        document.getElementById('btn-login').addEventListener('click', () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(error => console.error(error));
-        });
+        // Elementos DOM de controle principal
+        const loginScreen = document.getElementById('login-screen');
+        const mainApp = document.getElementById('main-app');
+        const btnLogin = document.getElementById('btn-login');
+        const btnLogout = document.getElementById('btn-logout');
+        const userNameDisplay = document.getElementById('user-name');
 
-        window.logout = () => signOut(auth);
-
-        onAuthStateChanged(auth, async (user) => {
+        // Monitoramento de Estado de Autenticação
+        onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('login-screen').classList.remove('active');
-                document.getElementById('app-screen').style.display = 'block';
-                document.getElementById('user-pic').src = user.photoURL;
-                document.getElementById('user-pic').style.display = 'block';
-                
-                await setDoc(doc(db, "users", user.uid), {
-                    uid: user.uid, name: user.displayName, email: user.email
-                }, { merge: true });
-
-                loadUsers();
-                loadDailyEvaluations();
-                loadRanking();
-                loadManageGoals();
-                loadConsequences();
+                userNameDisplay.innerText = user.displayName || user.email;
+                loginScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                initApp();
             } else {
-                document.getElementById('login-screen').classList.add('active');
-                document.getElementById('app-screen').style.display = 'none';
                 currentUser = null;
+                loginScreen.classList.remove('hidden');
+                mainApp.classList.add('hidden');
             }
         });
 
-        async function loadUsers() {
-            const q = query(collection(db, "users"));
-            onSnapshot(q, (snapshot) => {
-                snapshot.forEach(doc => {
-                    usersData[doc.id] = doc.data();
-                });
-            });
+        // Login / Logout Eventos
+        btnLogin.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(err => console.error("Erro ao logar:", err));
+        });
+
+        btnLogout.addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        // Inicialização de Dados pós Login
+        async function initApp() {
+            await Promise.all([loadMetas(), loadConsequencias()]);
+            loadRanking();
         }
 
-        // Adicionar Meta (Automático para o usuário logado)
-        window.addGoal = async () => {
-            const title = document.getElementById('goal-title').value;
-            const points = parseInt(document.getElementById('goal-points').value);
+        // --- SEÇÃO CRUD DE METAS ---
+        async function loadMetas() {
+            const q = query(collection(db, "metas"), orderBy("createdAt", "asc"));
+            const querySnapshot = await getDocs(q);
+            arrMetas = [];
+            querySnapshot.forEach((doc) => {
+                arrMetas.push({ id: doc.id, ...doc.data() });
+            });
+            renderMetasForms();
+        }
 
-            if (!title || !points) return Swal.fire('Erro', 'Preencha todos os campos da meta.', 'error');
+        window.addMeta = async function() {
+            const input = document.getElementById('input-nova-meta');
+            const txt = input.value.trim();
+            if(!txt) return;
+            await addDoc(collection(db, "metas"), { texto: txt, createdAt: serverTimestamp() });
+            input.value = "";
+            await loadMetas();
+        }
 
-            await addDoc(collection(db, "goals"), { title, points, ownerUid: currentUser.uid });
-            document.getElementById('goal-title').value = '';
-            document.getElementById('goal-points').value = '';
-            Swal.fire('Sucesso', 'Meta adicionada!', 'success');
-        };
+        window.deleteMeta = async function(id) {
+            await deleteDoc(doc(db, "metas", id));
+            await loadMetas();
+        }
 
-        window.deleteGoal = async (id) => {
-            if(confirm('Tem certeza que deseja excluir esta meta?')) {
-                await deleteDoc(doc(db, "goals", id));
-            }
-        };
+        // --- SEÇÃO CRUD DE CONSEQUÊNCIAS ---
+        async function loadConsequencias() {
+            const q = query(collection(db, "consequencias"), orderBy("createdAt", "asc"));
+            const querySnapshot = await getDocs(q);
+            arrConsequencias = [];
+            querySnapshot.forEach((doc) => {
+                arrConsequencias.push({ id: doc.id, ...doc.data() });
+            });
+            renderConsequenciasForms();
+        }
 
-        window.addConsequence = async () => {
-            const text = document.getElementById('random-consequence').value;
-            if (!text) return Swal.fire('Erro', 'Digite a consequência.', 'error');
+        window.addConsequencia = async function() {
+            const input = document.getElementById('input-nova-consequencia');
+            const txt = input.value.trim();
+            if(!txt) return;
+            await addDoc(collection(db, "consequencias"), { texto: txt, createdAt: serverTimestamp() });
+            input.value = "";
+            await loadConsequencias();
+        }
 
-            await addDoc(collection(db, "consequences"), { text });
-            document.getElementById('random-consequence').value = '';
-            Swal.fire('Sucesso', 'Adicionado à roleta!', 'success');
-        };
+        window.deleteConsequencia = async function(id) {
+            await deleteDoc(doc(db, "consequencias", id));
+            await loadConsequencias();
+        }
 
-        window.deleteConsequence = async (id) => {
-            if(confirm('Tem certeza que deseja excluir da roleta?')) {
-                await deleteDoc(doc(db, "consequences", id));
-            }
-        };
-
-        function loadManageGoals() {
-            const q = query(collection(db, "goals"));
-            onSnapshot(q, (snapshot) => {
-                const list = document.getElementById('goals-list');
-                list.innerHTML = '';
-                snapshot.forEach(docSnap => {
-                    const goal = docSnap.data();
-                    const ownerName = usersData[goal.ownerUid]?.name || 'Desconhecido';
-                    list.innerHTML += `
-                        <div class="goal-item">
-                            <div class="goal-header">
-                                <strong>${goal.title}</strong>
-                                <span class="goal-points">${goal.points} pts</span>
-                            </div>
-                            <div style="font-size:12px; color:#a8a8b3;">De: ${ownerName}</div>
-                            <button class="btn-danger btn-small" onclick="deleteGoal('${docSnap.id}')" style="margin-top:10px;"><i class="fa-solid fa-trash"></i> Excluir</button>
+        // --- RENDERIZADORES DE INTERFACE (HTML DINÂMICO) ---
+        function renderMetasForms() {
+            const containerForm = document.getElementById('lista-metas-responder');
+            const containerCrud = document.getElementById('crud-lista-metas');
+            
+            // Render formulário de resposta
+            if(arrMetas.length === 0) {
+                containerForm.innerHTML = `<p class="text-slate-400 text-sm italic">Nenhuma meta cadastrada.</p>`;
+            } else {
+                containerForm.innerHTML = arrMetas.map(meta => `
+                    <div class="p-4 bg-white/60 rounded-xl border border-slate-100 shadow-sm">
+                        <p class="font-medium text-slate-800 mb-3">${meta.texto}</p>
+                        <div class="flex gap-4 text-sm">
+                            <label class="flex items-center gap-2 cursor-pointer text-emerald-600 font-medium">
+                                <input type="radio" name="meta-${meta.id}" value="fez" required class="text-emerald-500 focus:ring-emerald-400"> Fez
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer text-amber-600 font-medium">
+                                <input type="radio" name="meta-${meta.id}" value="metade" class="text-amber-500 focus:ring-amber-400"> Pela Metade
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer text-rose-600 font-medium">
+                                <input type="radio" name="meta-${meta.id}" value="nao" class="text-rose-500 focus:ring-rose-400"> Não Fez
+                            </label>
                         </div>
-                    `;
-                });
-                if(list.innerHTML === '') list.innerHTML = '<p style="color:#a8a8b3; font-size:14px;">Nenhuma meta cadastrada.</p>';
-            });
+                    </div>
+                `).join('');
+            }
+
+            // Render gerenciamento (Excluir/Ver)
+            containerCrud.innerHTML = arrMetas.map(meta => `
+                <li class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 text-sm">
+                    <span class="truncate pr-2">${meta.texto}</span>
+                    <button onclick="deleteMeta('${meta.id}')" class="text-xs bg-rose-50 text-rose-600 font-medium px-2 py-1 rounded-lg hover:bg-rose-100 transition">Remover</button>
+                </li>
+            `).join('');
         }
 
-        function loadConsequences() {
-            const q = query(collection(db, "consequences"));
-            onSnapshot(q, (snapshot) => {
-                const list = document.getElementById('consequences-list');
-                list.innerHTML = '';
-                consequencesPool = [];
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    consequencesPool.push(data.text);
-                    list.innerHTML += `
-                        <div class="goal-item" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 10px 0;">
-                            <span style="font-size: 15px;">${data.text}</span>
-                            <button class="btn-danger btn-small" onclick="deleteConsequence('${docSnap.id}')"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    `;
-                });
-                if(list.innerHTML === '') list.innerHTML = '<p style="color:#a8a8b3; font-size:14px;">Roleta vazia. Adicione penalidades!</p>';
-            });
+        function renderConsequenciasForms() {
+            const containerCrud = document.getElementById('crud-lista-consequencias');
+            containerCrud.innerHTML = arrConsequencias.map(c => `
+                <li class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 text-sm">
+                    <span class="truncate pr-2">${c.texto}</span>
+                    <button onclick="deleteConsequencia('${c.id}')" class="text-xs bg-rose-50 text-rose-600 font-medium px-2 py-1 rounded-lg hover:bg-rose-100 transition">Remover</button>
+                </li>
+            `).join('');
         }
 
-        function loadDailyEvaluations() {
-            onSnapshot(collection(db, "goals"), async (goalsSnapshot) => {
-                const evalsQ = query(collection(db, "evaluations"), where("date", "==", todayStr));
-                const evalsSnapshot = await getDocs(evalsQ);
-                const todayEvals = {};
-                evalsSnapshot.forEach(d => { todayEvals[d.data().goalId] = d.data(); });
+        // --- SUBMISSÃO DO QUESTIONÁRIO & LÓGICA DE CONSEQUÊNCIA ---
+        document.getElementById('form-metas').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const partnerName = document.getElementById('target-partner').value.trim();
+            if(!partnerName) {
+                alert("Por favor, digite o nome do parceiro avaliado!");
+                return;
+            }
+            if(arrMetas.length === 0) return alert("Nenhuma meta cadastrada para computar.");
 
-                const list = document.getElementById('evaluation-list');
-                list.innerHTML = '';
-                
-                goalsSnapshot.forEach(docSnap => {
-                    const goal = docSnap.data();
-                    const goalId = docSnap.id;
-                    const isMyGoal = goal.ownerUid === currentUser.uid;
-                    const evalData = todayEvals[goalId];
+            let totalPoints = 0;
+            let triggerConsequence = false;
 
-                    let actionHtml = '';
-
-                    if (!isMyGoal) {
-                        if (evalData) {
-                            actionHtml = `<span style="color: ${evalData.completed ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight:bold;">
-                                ${evalData.completed ? '<i class="fa-solid fa-check"></i> Você marcou: Cumpriu' : '<i class="fa-solid fa-xmark"></i> Você marcou: Falhou'}
-                            </span>`;
-                        } else {
-                            actionHtml = `
-                                <div class="actions">
-                                    <button class="btn-success" onclick="evaluateGoal('${goalId}', '${goal.ownerUid}', ${goal.points}, true)">Cumpriu</button>
-                                    <button class="btn-danger" onclick="evaluateGoal('${goalId}', '${goal.ownerUid}', ${goal.points}, false)">Falhou</button>
-                                </div>
-                            `;
-                        }
-                    } else {
-                        if (evalData) {
-                            actionHtml = `<span style="color: ${evalData.completed ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight:bold;">
-                                ${evalData.completed ? '✅ Seu parceiro confirmou!' : '❌ Seu parceiro marcou falha!'}
-                            </span>`;
-                        } else {
-                            actionHtml = `<span style="color: #a8a8b3; font-size: 12px;">Aguardando avaliação do parceiro(a)...</span>`;
-                        }
+            arrMetas.forEach(meta => {
+                const radioChecked = document.querySelector(`input[name="meta-${meta.id}"]:checked`);
+                if(radioChecked) {
+                    const val = radioChecked.value;
+                    if(val === "fez") totalPoints += 10;          // Meta 100% cumprida
+                    else if(val === "metade") {
+                        totalPoints += 5;         // Cumprida pela metade
+                        triggerConsequence = true;
+                    } else if(val === "nao") {
+                        triggerConsequence = true; // Não cumprida
                     }
-
-                    list.innerHTML += `
-                        <div class="goal-item">
-                            <div class="goal-header">
-                                <strong>${goal.title}</strong>
-                                <span class="goal-points">${goal.points} pts</span>
-                            </div>
-                            <div style="font-size: 12px; color: #8257e5;">${isMyGoal ? 'Minha Meta' : 'Meta do Parceiro(a)'}</div>
-                            ${actionHtml}
-                        </div>
-                    `;
-                });
-                
-                if(list.innerHTML === '') list.innerHTML = '<p style="color:#a8a8b3;">Nenhuma meta cadastrada.</p>';
+                }
             });
+
+            // Registrar no Histórico do Firestore para os Rankings periódicos
+            await addDoc(collection(db, "historico"), {
+                avaliador: currentUser.displayName || currentUser.email,
+                alvo: partnerName.toLowerCase().trim(),
+                pontos: totalPoints,
+                timestamp: Date.now(),
+                dataEnvio: serverTimestamp()
+            });
+
+            document.getElementById('form-metas').reset();
+            loadRanking();
+
+            if(triggerConsequence) {
+                drawConsequence();
+            } else {
+                alert(`Parabéns! Todas as metas foram cumpridas. Pontuação computada: +${totalPoints} pontos para ${partnerName}!`);
+            }
+        });
+
+        function drawConsequence() {
+            const modal = document.getElementById('modal-consequence');
+            const txtBox = document.getElementById('txt-consequence-drawn');
+            
+            if(arrConsequencias.length > 0) {
+                const randIndex = Math.floor(Math.random() * arrConsequencias.length);
+                txtBox.innerText = arrConsequencias[randIndex].texto;
+            } else {
+                txtBox.innerText = "Uma meta falhou, mas nenhuma consequência está cadastrada no sistema!";
+            }
+            modal.classList.remove('hidden');
         }
 
-        window.evaluateGoal = async (goalId, ownerUid, points, completed) => {
-            const evalId = `${todayStr}_${goalId}`;
-            await setDoc(doc(db, "evaluations", evalId), {
-                date: todayStr,
-                goalId,
-                ownerUid,
-                completed,
-                pointsEarned: completed ? points : 0
+        window.closeConsequenceModal = function() {
+            document.getElementById('modal-consequence').classList.add('hidden');
+        }
+
+        // --- LÓGICA DO RANKING ACUMULADO POR PERÍODO ---
+        window.loadRanking = async function() {
+            const period = document.getElementById('filter-period').value;
+            const querySnapshot = await getDocs(collection(db, "historico"));
+            
+            let logs = [];
+            const now = Date.now();
+            const umDia = 24 * 60 * 60 * 1000;
+
+            querySnapshot.forEach(doc => {
+                logs.push(doc.data());
             });
 
-            if (!completed) {
-                const dailyConsRef = doc(db, "daily_consequences", `${todayStr}_${ownerUid}`);
-                const dailyConsSnap = await getDoc(dailyConsRef);
-
-                if (!dailyConsSnap.exists()) {
-                    let randomCons = "Sorte grande! Nenhuma consequência cadastrada na roleta!";
-                    if (consequencesPool.length > 0) {
-                        const randomIndex = Math.floor(Math.random() * consequencesPool.length);
-                        randomCons = consequencesPool[randomIndex];
-                    }
-                    await setDoc(dailyConsRef, {
-                        date: todayStr,
-                        ownerUid: ownerUid,
-                        consequence: randomCons
-                    });
-                }
+            // Filtragem baseada no timestamp do javascript
+            if (period === "semana") {
+                logs = logs.filter(log => (now - log.timestamp) <= (7 * umDia));
+            } else if (period === "mes") {
+                logs = logs.filter(log => (now - log.timestamp) <= (30 * umDia));
             }
 
-            Swal.fire({
-                title: completed ? 'Boa!' : 'Ixi...',
-                text: completed ? 'Pontos garantidos!' : 'Marcado como falha. Sorteio realizado!',
-                icon: completed ? 'success' : 'warning',
-                timer: 1500,
-                showConfirmButton: false
-            });
-        };
-
-        function loadRanking() {
-            onSnapshot(collection(db, "evaluations"), (snapshot) => {
-                let scores = {};
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (!scores[data.ownerUid]) scores[data.ownerUid] = 0;
-                    scores[data.ownerUid] += data.pointsEarned;
-                });
-
-                const list = document.getElementById('ranking-list');
-                list.innerHTML = '';
-                for (const [uid, score] of Object.entries(scores)) {
-                    const name = usersData[uid]?.name || 'Usuário';
-                    list.innerHTML += `
-                        <li class="ranking-item">
-                            <span><i class="fa-solid fa-user"></i> ${name}</span>
-                            <span class="goal-points">${score} pts</span>
-                        </li>
-                    `;
-                }
+            // Agregação de pontos por Pessoa Avaliada (alvo)
+            const placar = {};
+            logs.forEach(log => {
+                const nomeFormatado = log.alvo.charAt(0).toUpperCase() + log.alvo.slice(1);
+                placar[nomeFormatado] = (placar[nomeFormatado] || 0) + log.pontos;
             });
 
-            const qCons = query(collection(db, "daily_consequences"), where("date", "==", todayStr));
-            onSnapshot(qCons, (snapshot) => {
-                const consequenceBox = document.getElementById('consequence-box');
-                let failedUsers = [];
+            // Ordenar de forma decrescente
+            const leaderboard = Object.keys(placar).map(nome => {
+                return { nome: nome, pontos: placar[nome] };
+            }).sort((a, b) => b.pontos - a.pontos);
 
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    failedUsers.push({ uid: data.ownerUid, consequence: data.consequence });
-                });
+            // Injetar no HTML da Tabela
+            const tbody = document.getElementById('tbody-ranking');
+            if(leaderboard.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-400 italic">Nenhum registro encontrado neste período.</td></tr>`;
+                return;
+            }
 
-                if (failedUsers.length > 0) {
-                    let htmlConsequences = failedUsers.map(f => {
-                        const nome = usersData[f.uid]?.name || 'Alguém';
-                        return `• <strong>${nome}</strong>: ${f.consequence}`;
-                    }).join('<br><br>');
-                    
-                    document.getElementById('consequence-text').innerHTML = `Sorteio de hoje:<br><br>${htmlConsequences}`;
-                    consequenceBox.style.display = 'block';
-                } else {
-                    consequenceBox.style.display = 'none';
-                }
-            });
+            tbody.innerHTML = leaderboard.map((user, i) => `
+                <tr class="hover:bg-slate-50/50 transition">
+                    <td class="p-4 font-bold text-slate-400">${i + 1}º</td>
+                    <td class="p-4 font-semibold text-slate-900">${user.nome}</td>
+                    <td class="p-4 text-right font-bold text-indigo-600">${user.pontos} pts</td>
+                </tr>
+            `).join('');
         }
 
-        window.toggleMenu = () => {
-            document.getElementById('sidebar').classList.toggle('active');
-        };
+        // --- CONTROLE DE ALTERNÂNCIA DE ABAS ---
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
 
-        window.showSection = (id) => {
-            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.getElementById('sidebar').classList.remove('active');
-        };
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+                btn.classList.add('text-slate-600', 'hover:text-slate-900');
+            });
+            
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            activeBtn.classList.remove('text-slate-600', 'hover:text-slate-900');
+            activeBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+
+            if(tabName === 'ranking') loadRanking();
+        }
     </script>
 </body>
 </html>
