@@ -62,7 +62,7 @@
                     </select>
                     
                     <form id="form-metas" class="space-y-6">
-                        <div id="lista-metas-responder" class="space-y-4">
+                        <div id="lista-metas-responder" class="space-y-6">
                             <p class="text-slate-400 text-sm italic">Nenhuma meta cadastrada ainda. Vá na aba Gerenciar.</p>
                         </div>
                         <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 px-4 rounded-xl transition shadow-md mt-6">Enviar Avaliação</button>
@@ -71,6 +71,14 @@
             </section>
 
             <section id="tab-content-ranking" class="tab-content hidden space-y-6">
+                <div id="dashboard-areas" class="glass rounded-2xl p-6 shadow-sm border border-white hidden">
+                    <h2 class="text-xl font-bold mb-4">Análise por Áreas</h2>
+                    <div id="dashboard-insights" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        </div>
+                    <div id="dashboard-bars" class="space-y-4">
+                        </div>
+                </div>
+
                 <div class="glass rounded-2xl p-6 shadow-sm border border-white">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <h2 class="text-xl font-bold">Placar Geral</h2>
@@ -90,7 +98,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-ranking" class="divide-y divide-slate-100 text-sm">
-                                </tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -100,9 +108,17 @@
                 <div class="glass rounded-2xl p-6 shadow-sm border border-white flex flex-col justify-between">
                     <div>
                         <h2 class="text-xl font-bold mb-4">Gerenciar Metas</h2>
-                        <div class="flex gap-2 mb-4">
-                            <input type="text" id="input-nova-meta" placeholder="Nova meta diária..." class="flex-1 p-2.5 text-sm rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-slate-800 transition">
-                            <button onclick="addMeta()" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 rounded-xl transition">Adicionar</button>
+                        <div class="space-y-2 mb-4">
+                            <input type="text" id="input-nova-meta" placeholder="Nova meta diária..." class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-slate-800 transition">
+                            <div class="flex gap-2">
+                                <select id="select-area-meta" class="flex-1 p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-slate-700">
+                                    <option value="sentimental">❤️ Área Sentimental</option>
+                                    <option value="espiritual">✨ Área Espiritual</option>
+                                    <option value="financeira">💰 Área Financeira</option>
+                                    <option value="pessoal">🌱 Área Pessoal</option>
+                                </select>
+                                <button onclick="addMeta()" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 rounded-xl transition whitespace-nowrap">Adicionar</button>
+                            </div>
                         </div>
                         <ul id="crud-lista-metas" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
                     </div>
@@ -163,6 +179,13 @@
         let arrConsequencias = [];
         let currentUser = null;
 
+        const areaLabels = {
+            sentimental: "❤️ Área Sentimental",
+            espiritual: "✨ Área Espiritual",
+            financeira: "💰 Área Financeira",
+            pessoal: "🌱 Área Pessoal"
+        };
+
         // Elementos DOM de controle principal
         const loginScreen = document.getElementById('login-screen');
         const mainApp = document.getElementById('main-app');
@@ -214,9 +237,11 @@
 
         window.addMeta = async function() {
             const input = document.getElementById('input-nova-meta');
+            const selectArea = document.getElementById('select-area-meta');
             const txt = input.value.trim();
+            const area = selectArea.value;
             if(!txt) return;
-            await addDoc(collection(db, "metas"), { texto: txt, createdAt: serverTimestamp() });
+            await addDoc(collection(db, "metas"), { texto: txt, area: area, createdAt: serverTimestamp() });
             input.value = "";
             await loadMetas();
         }
@@ -256,32 +281,51 @@
             const containerForm = document.getElementById('lista-metas-responder');
             const containerCrud = document.getElementById('crud-lista-metas');
             
-            // Render formulário de resposta
+            // Render formulário de resposta segregado por área
             if(arrMetas.length === 0) {
                 containerForm.innerHTML = `<p class="text-slate-400 text-sm italic">Nenhuma meta cadastrada.</p>`;
             } else {
-                containerForm.innerHTML = arrMetas.map(meta => `
-                    <div class="p-4 bg-white/60 rounded-xl border border-slate-100 shadow-sm">
-                        <p class="font-medium text-slate-800 mb-3">${meta.texto}</p>
-                        <div class="flex gap-4 text-sm">
-                            <label class="flex items-center gap-2 cursor-pointer text-emerald-600 font-medium">
-                                <input type="radio" name="meta-${meta.id}" value="fez" required class="text-emerald-500 focus:ring-emerald-400"> Fez
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer text-amber-600 font-medium">
-                                <input type="radio" name="meta-${meta.id}" value="metade" class="text-amber-500 focus:ring-amber-400"> Pela Metade
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer text-rose-600 font-medium">
-                                <input type="radio" name="meta-${meta.id}" value="nao" class="text-rose-500 focus:ring-rose-400"> Não Fez
-                            </label>
+                const grupos = { sentimental: [], espiritual: [], financeira: [], pessoal: [] };
+                arrMetas.forEach(meta => {
+                    const areaDefinida = meta.area || 'pessoal';
+                    if(grupos[areaDefinida]) grupos[areaDefinida].push(meta);
+                });
+
+                let htmlFinal = '';
+                for (const [key, metasDaArea] of Object.entries(grupos)) {
+                    if (metasDaArea.length === 0) continue;
+                    htmlFinal += `
+                        <div class="space-y-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1 mt-2">${areaLabels[key]}</h3>
+                    `;
+                    htmlFinal += metasDaArea.map(meta => `
+                        <div class="p-4 bg-white/60 rounded-xl border border-slate-100 shadow-sm">
+                            <p class="font-medium text-slate-800 mb-3">${meta.texto}</p>
+                            <div class="flex gap-4 text-sm">
+                                <label class="flex items-center gap-2 cursor-pointer text-emerald-600 font-medium">
+                                    <input type="radio" name="meta-${meta.id}" value="fez" required class="text-emerald-500 focus:ring-emerald-400"> Fez
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-amber-600 font-medium">
+                                    <input type="radio" name="meta-${meta.id}" value="metade" class="text-amber-500 focus:ring-amber-400"> Pela Metade
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-rose-600 font-medium">
+                                    <input type="radio" name="meta-${meta.id}" value="nao" class="text-rose-500 focus:ring-rose-400"> Não Fez
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                    htmlFinal += `</div>`;
+                }
+                containerForm.innerHTML = htmlFinal;
             }
 
             // Render gerenciamento (Excluir/Ver)
             containerCrud.innerHTML = arrMetas.map(meta => `
                 <li class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 text-sm">
-                    <span class="truncate pr-2">${meta.texto}</span>
+                    <span class="truncate pr-2">
+                        <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 mr-2">${(meta.area || 'pessoal').substring(0,3)}</span>
+                        ${meta.texto}
+                    </span>
                     <button onclick="deleteMeta('${meta.id}')" class="text-xs bg-rose-50 text-rose-600 font-medium px-2 py-1 rounded-lg hover:bg-rose-100 transition">Remover</button>
                 </li>
             `).join('');
@@ -310,25 +354,36 @@
             let totalPoints = 0;
             let triggerConsequence = false;
 
+            const pontosPorArea = { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 };
+            const maxPontosPorArea = { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 };
+
             arrMetas.forEach(meta => {
+                const areaKey = meta.area || 'pessoal';
+                maxPontosPorArea[areaKey] += 10;
+
                 const radioChecked = document.querySelector(`input[name="meta-${meta.id}"]:checked`);
                 if(radioChecked) {
                     const val = radioChecked.value;
-                    if(val === "fez") totalPoints += 10;          // Meta 100% cumprida
-                    else if(val === "metade") {
-                        totalPoints += 5;         // Cumprida pela metade
+                    if(val === "fez") {
+                        totalPoints += 10;
+                        pontosPorArea[areaKey] += 10;
+                    } else if(val === "metade") {
+                        totalPoints += 5;
+                        pontosPorArea[areaKey] += 5;
                         triggerConsequence = true;
                     } else if(val === "nao") {
-                        triggerConsequence = true; // Não cumprida
+                        triggerConsequence = true;
                     }
                 }
             });
 
-            // Registrar no Histórico do Firestore para os Rankings periódicos
+            // Registrar no Histórico do Firestore para os Rankings periódicos e Dashboard
             await addDoc(collection(db, "historico"), {
                 avaliador: currentUser.displayName || currentUser.email,
                 alvo: partnerName.toLowerCase().trim(),
                 pontos: totalPoints,
+                pontosPorArea: pontosPorArea,
+                maxPontosPorArea: maxPontosPorArea,
                 timestamp: Date.now(),
                 dataEnvio: serverTimestamp()
             });
@@ -360,7 +415,7 @@
             document.getElementById('modal-consequence').classList.add('hidden');
         }
 
-        // --- LÓGICA DO RANKING ACUMULADO POR PERÍODO ---
+        // --- LÓGICA DO RANKING ACUMULADO POR PERÍODO & DASHBOARD ---
         window.loadRanking = async function() {
             const period = document.getElementById('filter-period').value;
             const querySnapshot = await getDocs(collection(db, "historico"));
@@ -380,7 +435,78 @@
                 logs = logs.filter(log => (now - log.timestamp) <= (30 * umDia));
             }
 
-            // Agregação de pontos por Pessoa Avaliada (alvo)
+            // --- CÁLCULO DO DASHBOARD POR ÁREAS ---
+            const totalObtidoArea = { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 };
+            const totalMaximoArea = { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 };
+
+            logs.forEach(log => {
+                if (log.pontosPorArea && log.maxPontosPorArea) {
+                    for (const area in totalObtidoArea) {
+                        totalObtidoArea[area] += log.pontosPorArea[area] || 0;
+                        totalMaximoArea[area] += log.maxPontosPorArea[area] || 0;
+                    }
+                }
+            });
+
+            const dashboardAreasEl = document.getElementById('dashboard-areas');
+            const dashboardInsightsEl = document.getElementById('dashboard-insights');
+            const dashboardBarsEl = document.getElementById('dashboard-bars');
+            const totalMaxGeral = Object.values(totalMaximoArea).reduce((a, b) => a + b, 0);
+
+            if (totalMaxGeral > 0) {
+                dashboardAreasEl.classList.remove('hidden');
+                
+                const desempenhoAreas = Object.keys(totalObtidoArea).map(area => {
+                    const max = totalMaximoArea[area];
+                    const obtido = totalObtidoArea[area];
+                    const pct = max > 0 ? Math.round((obtido / max) * 100) : 0;
+                    return { area, pct, max };
+                });
+
+                const areasComDados = desempenhoAreas.filter(a => a.max > 0);
+
+                if (areasComDados.length > 0) {
+                    const ordenadas = [...areasComDados].sort((a, b) => b.pct - a.pct);
+                    const melhor = ordenadas[0];
+                    const pior = ordenadas[ordenadas.length - 1];
+
+                    const nomesResumidos = { sentimental: "Sentimental", espiritual: "Espiritual", financeira: "Financeira", pessoal: "Pessoal" };
+                    
+                    let statusPiorColor = pior.pct < 40 ? 'text-rose-600 bg-rose-50 border border-rose-100' : 'text-amber-600 bg-amber-50 border border-amber-100';
+                    let statusPiorLabel = pior.pct < 35 ? '⚠️ Área Péssima (Crítico)' : '📉 Precisa Melhorar';
+
+                    dashboardInsightsEl.innerHTML = `
+                        <div class="p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-xl">
+                            <span class="block text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1">🚀 Se Saindo Melhor</span>
+                            <span class="text-lg font-bold">${nomesResumidos[melhor.area]} (${melhor.pct}%)</span>
+                        </div>
+                        <div class="p-4 ${statusPiorColor} rounded-xl">
+                            <span class="block text-xs font-bold uppercase tracking-wider opacity-85 mb-1">${statusPiorLabel}</span>
+                            <span class="text-lg font-bold">${nomesResumidos[pior.area]} (${pior.pct}%)</span>
+                        </div>
+                    `;
+                } else {
+                    dashboardInsightsEl.innerHTML = `<p class="text-slate-400 text-sm italic col-span-2">Sem avaliações estruturadas no período.</p>`;
+                }
+
+                const barColors = { sentimental: "bg-rose-500", espiritual: "bg-indigo-500", financeira: "bg-emerald-500", pessoal: "bg-amber-500" };
+
+                dashboardBarsEl.innerHTML = desempenhoAreas.map(item => `
+                    <div>
+                        <div class="flex justify-between text-sm font-medium mb-1">
+                            <span class="text-slate-700">${areaLabels[item.area]}</span>
+                            <span class="text-slate-500">${item.max > 0 ? item.pct + '%' : 'Sem registros'}</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5">
+                            <div class="${barColors[item.area]} h-2.5 rounded-full transition-all duration-500" style="width: ${item.pct}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                dashboardAreasEl.classList.add('hidden');
+            }
+
+            // --- AGREGAÇÃO DO PLACAR GERAL ---
             const placar = {};
             logs.forEach(log => {
                 const nomeFormatado = log.alvo.charAt(0).toUpperCase() + log.alvo.slice(1);
