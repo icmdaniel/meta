@@ -556,15 +556,21 @@
                 }
             }
 
-            // --- CÁLCULO DO DASHBOARD POR ÁREAS ---
-            const totalObtidoArea = { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 };
-            const totalMaximoArea = { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 };
+            // --- CÁLCULO DO DASHBOARD POR ÁREAS (SEPARADO POR PESSOA) ---
+            const dadosPorPessoa = {};
 
             logs.forEach(log => {
-                if (log.pontosPorArea && log.maxPontosPorArea) {
-                    for (const area in totalObtidoArea) {
-                        totalObtidoArea[area] += log.pontosPorArea[area] || 0;
-                        totalMaximoArea[area] += log.maxPontosPorArea[area] || 0;
+                if (log.pontosPorArea && log.maxPontosPorArea && log.alvo) {
+                    const nome = log.alvo.charAt(0).toUpperCase() + log.alvo.slice(1).toLowerCase();
+                    if (!dadosPorPessoa[nome]) {
+                        dadosPorPessoa[nome] = {
+                            obtido: { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 },
+                            max: { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 }
+                        };
+                    }
+                    for (const area in dadosPorPessoa[nome].obtido) {
+                        dadosPorPessoa[nome].obtido[area] += log.pontosPorArea[area] || 0;
+                        dadosPorPessoa[nome].max[area] += log.maxPontosPorArea[area] || 0;
                     }
                 }
             });
@@ -572,57 +578,83 @@
             const dashboardAreasEl = document.getElementById('dashboard-areas');
             const dashboardInsightsEl = document.getElementById('dashboard-insights');
             const dashboardBarsEl = document.getElementById('dashboard-bars');
-            const totalMaxGeral = Object.values(totalMaximoArea).reduce((a, b) => a + b, 0);
+            
+            dashboardInsightsEl.innerHTML = '';
+            dashboardInsightsEl.classList.add('hidden');
 
-            if (totalMaxGeral > 0) {
-                dashboardAreasEl.classList.remove('hidden');
-                
-                const desempenhoAreas = Object.keys(totalObtidoArea).map(area => {
-                    const max = totalMaximoArea[area];
-                    const obtido = totalObtidoArea[area];
+            let temDadosGeral = false;
+            let htmlDashboard = '';
+
+            Object.keys(dadosPorPessoa).sort().forEach(nome => {
+                const pessoaDados = dadosPorPessoa[nome];
+                const totalMaxPessoa = Object.values(pessoaDados.max).reduce((a, b) => a + b, 0);
+                if (totalMaxPessoa === 0) return;
+
+                temDadosGeral = true;
+
+                const desempenhoAreas = Object.keys(pessoaDados.obtido).map(area => {
+                    const max = pessoaDados.max[area];
+                    const obtido = pessoaDados.obtido[area];
                     const pct = max > 0 ? Math.round((obtido / max) * 100) : 0;
                     return { area, pct, max };
                 });
 
                 const areasComDados = desempenhoAreas.filter(a => a.max > 0);
+                let insightsHtml = '';
 
                 if (areasComDados.length > 0) {
                     const ordenadas = [...areasComDados].sort((a, b) => b.pct - a.pct);
                     const melhor = ordenadas[0];
                     const pior = ordenadas[ordenadas.length - 1];
-
                     const nomesResumidos = { sentimental: "Sentimental", espiritual: "Espiritual", financeira: "Financeira", pessoal: "Pessoal" };
                     
                     let statusPiorColor = pior.pct < 40 ? 'text-rose-600 bg-rose-50 border border-rose-100' : 'text-amber-600 bg-amber-50 border border-amber-100';
-                    let statusPiorLabel = pior.pct < 35 ? '⚠️ Área Péssima (Crítico)' : '📉 Precisa Melhorar';
+                    let statusPiorLabel = pior.pct < 35 ? '⚠️ Crítico' : '📉 Precisa Melhorar';
 
-                    dashboardInsightsEl.innerHTML = `
-                        <div class="p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-xl">
-                            <span class="block text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1">🚀 Se Saindo Melhor</span>
-                            <span class="text-lg font-bold">${nomesResumidos[melhor.area]} (${melhor.pct}%)</span>
-                        </div>
-                        <div class="p-4 ${statusPiorColor} rounded-xl">
-                            <span class="block text-xs font-bold uppercase tracking-wider opacity-85 mb-1">${statusPiorLabel}</span>
-                            <span class="text-lg font-bold">${nomesResumidos[pior.area]} (${pior.pct}%)</span>
+                    insightsHtml = `
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div class="p-3 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-xl">
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-1">🚀 Se Saindo Melhor</span>
+                                <span class="text-sm font-bold">${nomesResumidos[melhor.area]} (${melhor.pct}%)</span>
+                            </div>
+                            <div class="p-3 ${statusPiorColor} rounded-xl">
+                                <span class="block text-[10px] font-bold uppercase tracking-wider opacity-85 mb-1">${statusPiorLabel}</span>
+                                <span class="text-sm font-bold">${nomesResumidos[pior.area]} (${pior.pct}%)</span>
+                            </div>
                         </div>
                     `;
-                } else {
-                    dashboardInsightsEl.innerHTML = `<p class="text-slate-400 text-sm italic col-span-2">Sem avaliações estruturadas no período.</p>`;
                 }
 
                 const barColors = { sentimental: "bg-rose-500", espiritual: "bg-indigo-500", financeira: "bg-emerald-500", pessoal: "bg-amber-500" };
 
-                dashboardBarsEl.innerHTML = desempenhoAreas.map(item => `
+                const barrasHtml = desempenhoAreas.map(item => `
                     <div>
-                        <div class="flex justify-between text-sm font-medium mb-1">
+                        <div class="flex justify-between text-xs font-medium mb-1">
                             <span class="text-slate-700">${areaLabels[item.area]}</span>
                             <span class="text-slate-500">${item.max > 0 ? item.pct + '%' : 'Sem registros'}</span>
                         </div>
-                        <div class="w-full bg-slate-100 rounded-full h-2.5">
-                            <div class="${barColors[item.area]} h-2.5 rounded-full transition-all duration-500" style="width: ${item.pct}%"></div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div class="${barColors[item.area]} h-2 rounded-full transition-all duration-500" style="width: ${item.pct}%"></div>
                         </div>
                     </div>
                 `).join('');
+
+                htmlDashboard += `
+                    <div class="bg-white/50 border border-slate-100/80 p-5 rounded-2xl mb-6 last:mb-0 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <span>👤</span> Análise de ${nome}
+                        </h3>
+                        ${insightsHtml}
+                        <div class="space-y-4">
+                            ${barrasHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (temDadosGeral) {
+                dashboardAreasEl.classList.remove('hidden');
+                dashboardBarsEl.innerHTML = htmlDashboard;
             } else {
                 dashboardAreasEl.classList.add('hidden');
             }
