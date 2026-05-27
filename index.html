@@ -45,6 +45,7 @@
         <nav class="max-w-4xl w-full mx-auto px-4 mt-6">
             <div class="bg-slate-200/60 p-1 rounded-xl flex gap-1">
                 <button onclick="switchTab('responder')" id="nav-responder" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition bg-white text-slate-900 shadow-sm">Responder</button>
+                <button onclick="switchTab('respostas')" id="nav-respostas" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition text-slate-600 hover:text-slate-900">Respostas</button>
                 <button onclick="switchTab('ranking')" id="nav-ranking" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition text-slate-600 hover:text-slate-900">Ranking</button>
                 <button onclick="switchTab('gerenciar')" id="nav-gerenciar" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition text-slate-600 hover:text-slate-900">Gerenciar</button>
             </div>
@@ -67,6 +68,21 @@
                         </div>
                         <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 px-4 rounded-xl transition shadow-md mt-6">Enviar Avaliação</button>
                     </form>
+                </div>
+            </section>
+
+            <section id="tab-content-respostas" class="tab-content hidden space-y-6">
+                <div class="glass rounded-2xl p-6 shadow-sm border border-white">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <h2 class="text-xl font-bold">Visualizar Respostas</h2>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-slate-600">Data:</span>
+                            <input type="date" id="filtro-data-respostas" onchange="loadRespostasPorData()" class="p-2 rounded-xl border border-slate-200 bg-white focus:outline-none text-sm font-medium text-slate-700">
+                        </div>
+                    </div>
+                    <div id="lista-respostas-dia" class="space-y-6">
+                        <p class="text-slate-400 text-sm italic text-center py-4">Nenhuma resposta registrada para este dia.</p>
+                    </div>
                 </div>
             </section>
 
@@ -126,16 +142,21 @@
                     <div>
                         <h2 class="text-xl font-bold mb-4">Gerenciar Metas</h2>
                         <div class="space-y-2 mb-4">
-                            <input type="text" id="input-nova-meta" placeholder="Nova meta diária..." class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-slate-800 transition">
-                            <div class="flex gap-2">
-                                <select id="select-area-meta" class="flex-1 p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-slate-700">
+                            <input type="text" id="input-nova-meta" placeholder="Nova meta..." class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-slate-800 transition">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="select-area-meta" class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-slate-700">
                                     <option value="sentimental">❤️ Área Sentimental</option>
                                     <option value="espiritual">✨ Área Espiritual</option>
                                     <option value="financeira">💰 Área Financeira</option>
                                     <option value="pessoal">🌱 Área Pessoal</option>
                                 </select>
-                                <button onclick="addMeta()" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 rounded-xl transition whitespace-nowrap">Adicionar</button>
+                                <select id="select-frequencia-meta" class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-slate-700">
+                                    <option value="diaria">📆 Diária</option>
+                                    <option value="semanal">🔁 Semanal</option>
+                                    <option value="mensal">📅 Mensal</option>
+                                </select>
                             </div>
+                            <button onclick="addMeta()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium py-2.5 rounded-xl transition whitespace-nowrap">Adicionar Meta</button>
                         </div>
                         <ul id="crud-lista-metas" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
                     </div>
@@ -196,7 +217,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy, where, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
         // Configuração fornecida pelo usuário
         const firebaseConfig = {
@@ -218,6 +239,7 @@
         let arrConsequencias = [];
         let arrPremiacoes = [];
         let currentUser = null;
+        let editingMetaId = null;
 
         const areaLabels = {
             sentimental: "❤️ Área Sentimental",
@@ -260,8 +282,15 @@
 
         // Inicialização de Dados pós Login
         async function initApp() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            document.getElementById('filtro-data-respostas').value = `${year}-${month}-${day}`;
+
             await Promise.all([loadMetas(), loadConsequencias(), loadPremiacoes()]);
             loadRanking();
+            loadRespostasPorData();
         }
 
         // --- SEÇÃO CRUD DE METAS ---
@@ -278,11 +307,33 @@
         window.addMeta = async function() {
             const input = document.getElementById('input-nova-meta');
             const selectArea = document.getElementById('select-area-meta');
+            const selectFreq = document.getElementById('select-frequencia-meta');
             const txt = input.value.trim();
             const area = selectArea.value;
+            const freq = selectFreq.value;
             if(!txt) return;
-            await addDoc(collection(db, "metas"), { texto: txt, area: area, createdAt: serverTimestamp() });
+            await addDoc(collection(db, "metas"), { texto: txt, area: area, frequencia: freq, createdAt: serverTimestamp() });
             input.value = "";
+            await loadMetas();
+        }
+
+        window.startEditMeta = function(id) {
+            editingMetaId = id;
+            renderMetasForms();
+        }
+
+        window.cancelEditMeta = function() {
+            editingMetaId = null;
+            renderMetasForms();
+        }
+
+        window.saveEditMeta = async function(id) {
+            const txt = document.getElementById(`edit-text-${id}`).value.trim();
+            const area = document.getElementById(`edit-area-${id}`).value;
+            const freq = document.getElementById(`edit-freq-${id}`).value;
+            if(!txt) return;
+            await updateDoc(doc(db, "metas", id), { texto: txt, area: area, frequencia: freq });
+            editingMetaId = null;
             await loadMetas();
         }
 
@@ -346,12 +397,25 @@
             const containerForm = document.getElementById('lista-metas-responder');
             const containerCrud = document.getElementById('crud-lista-metas');
             
+            const hoje = new Date();
+            const ehDomingo = hoje.getDay() === 0;
+            const amanha = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1);
+            const ehUltimoDiaMes = amanha.getDate() === 1;
+
+            const metasFiltradas = arrMetas.filter(meta => {
+                const freq = meta.frequencia || 'diaria';
+                if (freq === 'diaria') return true;
+                if (freq === 'semanal' && ehDomingo) return true;
+                if (freq === 'mensal' && ehUltimoDiaMes) return true;
+                return false;
+            });
+
             // Render formulário de resposta segregado por área
-            if(arrMetas.length === 0) {
-                containerForm.innerHTML = `<p class="text-slate-400 text-sm italic">Nenhuma meta cadastrada.</p>`;
+            if(metasFiltradas.length === 0) {
+                containerForm.innerHTML = `<p class="text-slate-400 text-sm italic">Nenhuma meta aplicável para o dia de hoje.</p>`;
             } else {
                 const grupos = { sentimental: [], espiritual: [], financeira: [], pessoal: [] };
-                arrMetas.forEach(meta => {
+                metasFiltradas.forEach(meta => {
                     const areaDefinida = meta.area || 'pessoal';
                     if(grupos[areaDefinida]) grupos[areaDefinida].push(meta);
                 });
@@ -384,16 +448,47 @@
                 containerForm.innerHTML = htmlFinal;
             }
 
-            // Render gerenciamento (Excluir/Ver)
-            containerCrud.innerHTML = arrMetas.map(meta => `
-                <li class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 text-sm">
-                    <span class="truncate pr-2">
-                        <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 mr-2">${(meta.area || 'pessoal').substring(0,3)}</span>
-                        ${meta.texto}
-                    </span>
-                    <button onclick="deleteMeta('${meta.id}')" class="text-xs bg-rose-50 text-rose-600 font-medium px-2 py-1 rounded-lg hover:bg-rose-100 transition">Remover</button>
-                </li>
-            `).join('');
+            // Render gerenciamento (Excluir/Editar)
+            containerCrud.innerHTML = arrMetas.map(meta => {
+                if (meta.id === editingMetaId) {
+                    return `
+                        <li class="bg-white p-3 rounded-xl border border-slate-200 text-sm space-y-2">
+                            <input type="text" id="edit-text-${meta.id}" value="${meta.texto}" class="w-full p-2 text-xs rounded-lg border border-slate-200 bg-slate-50">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="edit-area-${meta.id}" class="p-2 text-xs rounded-lg border border-slate-200 bg-white">
+                                    <option value="sentimental" ${meta.area === 'sentimental' ? 'selected' : ''}>❤️ Sentimental</option>
+                                    <option value="espiritual" ${meta.area === 'espiritual' ? 'selected' : ''}>✨ Espiritual</option>
+                                    <option value="financeira" ${meta.area === 'financeira' ? 'selected' : ''}>💰 Financeira</option>
+                                    <option value="pessoal" ${meta.area === 'pessoal' ? 'selected' : ''}>🌱 Pessoal</option>
+                                </select>
+                                <select id="edit-freq-${meta.id}" class="p-2 text-xs rounded-lg border border-slate-200 bg-white">
+                                    <option value="diaria" ${meta.frequencia === 'diaria' ? 'selected' : ''}>📆 Diária</option>
+                                    <option value="semanal" ${meta.frequencia === 'semanal' ? 'selected' : ''}>🔁 Semanal</option>
+                                    <option value="mensal" ${meta.frequencia === 'mensal' ? 'selected' : ''}>📅 Mensal</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-end gap-1">
+                                <button onclick="saveEditMeta('${meta.id}')" class="text-xs bg-emerald-50 text-emerald-600 font-medium px-2 py-1 rounded-lg hover:bg-emerald-100 transition">Salvar</button>
+                                <button onclick="cancelEditMeta()" class="text-xs bg-slate-100 text-slate-600 font-medium px-2 py-1 rounded-lg hover:bg-slate-200 transition">Cancelar</button>
+                            </div>
+                        </li>
+                    `;
+                } else {
+                    return `
+                        <li class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 text-sm">
+                            <span class="truncate pr-2">
+                                <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 mr-1">${(meta.area || 'pessoal').substring(0,3)}</span>
+                                <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-500 mr-2">${(meta.frequencia || 'diaria').substring(0,3)}</span>
+                                ${meta.texto}
+                            </span>
+                            <div class="flex gap-1 flex-shrink-0">
+                                <button onclick="startEditMeta('${meta.id}')" class="text-xs bg-amber-50 text-amber-600 font-medium px-2 py-1 rounded-lg hover:bg-amber-100 transition">Editar</button>
+                                <button onclick="deleteMeta('${meta.id}')" class="text-xs bg-rose-50 text-rose-600 font-medium px-2 py-1 rounded-lg hover:bg-rose-100 transition">Remover</button>
+                            </div>
+                        </li>
+                    `;
+                }
+            }).join('');
         }
 
         function renderConsequenciasForms() {
@@ -424,21 +519,37 @@
                 alert("Por favor, digite o nome do parceiro avaliado!");
                 return;
             }
-            if(arrMetas.length === 0) return alert("Nenhuma meta cadastrada para computar.");
+
+            const hoje = new Date();
+            const ehDomingo = hoje.getDay() === 0;
+            const amanha = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1);
+            const ehUltimoDiaMes = amanha.getDate() === 1;
+
+            const metasFiltradas = arrMetas.filter(meta => {
+                const freq = meta.frequencia || 'diaria';
+                if (freq === 'diaria') return true;
+                if (freq === 'semanal' && ehDomingo) return true;
+                if (freq === 'mensal' && ehUltimoDiaMes) return true;
+                return false;
+            });
+
+            if(metasFiltradas.length === 0) return alert("Nenhuma meta cadastrada aplicável para hoje para computar.");
 
             let totalPoints = 0;
             let triggerConsequence = false;
 
             const pontosPorArea = { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 };
             const maxPontosPorArea = { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 };
+            const respostasSalvas = [];
 
-            arrMetas.forEach(meta => {
+            metasFiltradas.forEach(meta => {
                 const areaKey = meta.area || 'pessoal';
                 maxPontosPorArea[areaKey] += 10;
 
                 const radioChecked = document.querySelector(`input[name="meta-${meta.id}"]:checked`);
+                let val = "nao";
                 if(radioChecked) {
-                    const val = radioChecked.value;
+                    val = radioChecked.value;
                     if(val === "fez") {
                         totalPoints += 10;
                         pontosPorArea[areaKey] += 10;
@@ -449,7 +560,15 @@
                     } else if(val === "nao") {
                         triggerConsequence = true;
                     }
+                } else {
+                    triggerConsequence = true;
                 }
+
+                respostasSalvas.push({
+                    metaTexto: meta.texto,
+                    area: areaKey,
+                    resposta: val
+                });
             });
 
             // Registrar no Histórico do Firestore para os Rankings periódicos e Dashboard
@@ -459,12 +578,14 @@
                 pontos: totalPoints,
                 pontosPorArea: pontosPorArea,
                 maxPontosPorArea: maxPontosPorArea,
+                respostas: respostasSalvas,
                 timestamp: Date.now(),
                 dataEnvio: serverTimestamp()
             });
 
             document.getElementById('form-metas').reset();
             loadRanking();
+            loadRespostasPorData();
 
             if(triggerConsequence) {
                 drawConsequence();
@@ -517,6 +638,71 @@
                 customInputs.classList.add('hidden');
             }
             loadRanking();
+        }
+
+        // --- CARREGAMENTO DETALHADO DE RESPOSTAS POR DATA ---
+        window.loadRespostasPorData = async function() {
+            const dataSel = document.getElementById('filtro-data-respostas').value;
+            if (!dataSel) return;
+            
+            const startOfDay = new Date(dataSel + 'T00:00:00').getTime();
+            const endOfDay = new Date(dataSel + 'T23:59:59').getTime();
+            
+            const querySnapshot = await getDocs(collection(db, "historico"));
+            let logs = [];
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.timestamp >= startOfDay && data.timestamp <= endOfDay) {
+                    logs.push(data);
+                }
+            });
+            
+            const container = document.getElementById('lista-respostas-dia');
+            if (logs.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 text-sm italic text-center py-4">Nenhuma resposta registrada para este dia.</p>`;
+                return;
+            }
+            
+            const badgeClasses = {
+                fez: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                metade: 'bg-amber-50 text-amber-700 border-amber-100',
+                nao: 'bg-rose-50 text-rose-700 border-rose-100'
+            };
+            const labelsRes = { fez: 'Fez', metade: 'Pela Metade', nao: 'Não Fez' };
+            
+            container.innerHTML = logs.map(log => {
+                const nomeAlvo = log.alvo.charAt(0).toUpperCase() + log.alvo.slice(1).toLowerCase();
+                
+                let respostasHtml = `<p class="text-xs text-slate-400 italic">Detalhes não disponíveis para este registro.</p>`;
+                if (log.respostas && log.respostas.length > 0) {
+                    respostasHtml = log.respostas.map(resp => `
+                        <div class="flex justify-between items-start gap-4 p-3 bg-slate-50/60 rounded-xl border border-slate-100 text-sm">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 mr-2">${areaLabels[resp.area] || resp.area}</span>
+                                <span class="font-medium text-slate-800">${resp.metaTexto}</span>
+                            </div>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full border ${badgeClasses[resp.resposta] || 'bg-slate-100'} whitespace-nowrap">
+                                ${labelsRes[resp.resposta] || resp.resposta}
+                            </span>
+                        </div>
+                    `).join('');
+                }
+                
+                return `
+                    <div class="p-5 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <div>
+                                <h3 class="font-bold text-slate-900">Avaliação para ${nomeAlvo}</h3>
+                                <p class="text-xs text-slate-400">Por: ${log.avaliador}</p>
+                            </div>
+                            <span class="text-sm font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl">${log.points || log.pontos} pts</span>
+                        </div>
+                        <div class="space-y-2">
+                            ${respostasHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // --- LÓGICA DO RANKING ACUMULADO POR PERÍODO & DASHBOARD ---
@@ -702,6 +888,7 @@
             activeBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
 
             if(tabName === 'ranking') loadRanking();
+            if(tabName === 'respostas') loadRespostasPorData();
         }
     </script>
 </body>
