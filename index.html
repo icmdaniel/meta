@@ -430,7 +430,7 @@
                     htmlFinal += metasDaArea.map(meta => `
                         <div class="p-4 bg-white/60 rounded-xl border border-slate-100 shadow-sm">
                             <p class="font-medium text-slate-800 mb-3">${meta.texto}</p>
-                            <div class="flex gap-4 text-sm">
+                            <div class="flex gap-4 text-sm mb-2">
                                 <label class="flex items-center gap-2 cursor-pointer text-emerald-600 font-medium">
                                     <input type="radio" name="meta-${meta.id}" value="fez" required class="text-emerald-500 focus:ring-emerald-400"> Fez
                                 </label>
@@ -440,6 +440,12 @@
                                 <label class="flex items-center gap-2 cursor-pointer text-rose-600 font-medium">
                                     <input type="radio" name="meta-${meta.id}" value="nao" class="text-rose-500 focus:ring-rose-400"> Não Fez
                                 </label>
+                            </div>
+                            <button type="button" onclick="document.getElementById('container-comentario-${meta.id}').classList.toggle('hidden')" class="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1 transition mt-2 underline">
+                                💬 Adicionar observação
+                            </button>
+                            <div id="container-comentario-${meta.id}" class="hidden mt-2">
+                                <textarea id="comentario-${meta.id}" placeholder="Escreva um comentário opcional..." class="w-full p-2.5 text-xs rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-slate-800 transition" rows="2"></textarea>
                             </div>
                         </div>
                     `).join('');
@@ -564,10 +570,14 @@
                     triggerConsequence = true;
                 }
 
+                const txtComentario = document.getElementById(`comentario-${meta.id}`);
+                const comentarioVal = txtComentario ? txtComentario.value.trim() : "";
+
                 respostasSalvas.push({
                     metaTexto: meta.texto,
                     area: areaKey,
-                    resposta: val
+                    resposta: val,
+                    comentario: comentarioVal
                 });
             });
 
@@ -676,14 +686,21 @@
                 let respostasHtml = `<p class="text-xs text-slate-400 italic">Detalhes não disponíveis para este registro.</p>`;
                 if (log.respostas && log.respostas.length > 0) {
                     respostasHtml = log.respostas.map(resp => `
-                        <div class="flex justify-between items-start gap-4 p-3 bg-slate-50/60 rounded-xl border border-slate-100 text-sm">
-                            <div>
-                                <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 mr-2">${areaLabels[resp.area] || resp.area}</span>
-                                <span class="font-medium text-slate-800">${resp.metaTexto}</span>
+                        <div class="p-3 bg-slate-50/60 rounded-xl border border-slate-100 text-sm space-y-2">
+                            <div class="flex justify-between items-start gap-4">
+                                <div>
+                                    <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 mr-2">${areaLabels[resp.area] || resp.area}</span>
+                                    <span class="font-medium text-slate-800">${resp.metaTexto}</span>
+                                </div>
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full border ${badgeClasses[resp.resposta] || 'bg-slate-100'} whitespace-nowrap">
+                                    ${labelsRes[resp.resposta] || resp.resposta}
+                                </span>
                             </div>
-                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full border ${badgeClasses[resp.resposta] || 'bg-slate-100'} whitespace-nowrap">
-                                ${labelsRes[resp.resposta] || resp.resposta}
-                            </span>
+                            ${resp.comentario ? `
+                                <div class="text-xs text-slate-600 bg-white/70 p-2 rounded-lg border border-slate-100/80 italic mt-1">
+                                    💬 <strong>Observação:</strong> ${resp.comentario}
+                                </div>
+                            ` : ''}
                         </div>
                     `).join('');
                 }
