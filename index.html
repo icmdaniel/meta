@@ -683,6 +683,16 @@
             container.innerHTML = logs.map(log => {
                 const nomeAlvo = log.alvo.charAt(0).toUpperCase() + log.alvo.slice(1).toLowerCase();
                 
+                let pontosCalculados = 0;
+                if (log.respostas && log.respostas.length > 0) {
+                    log.respostas.forEach(resp => {
+                        if (resp.resposta === 'fez') pontosCalculados += 10;
+                        else if (resp.resposta === 'metade') pontosCalculados += 5;
+                    });
+                } else {
+                    pontosCalculados = log.points || log.pontos || 0;
+                }
+
                 let respostasHtml = `<p class="text-xs text-slate-400 italic">Detalhes não disponíveis para este registro.</p>`;
                 if (log.respostas && log.respostas.length > 0) {
                     respostasHtml = log.respostas.map(resp => `
@@ -712,7 +722,7 @@
                                 <h3 class="font-bold text-slate-900">Avaliação para ${nomeAlvo}</h3>
                                 <p class="text-xs text-slate-400">Por: ${log.avaliador}</p>
                             </div>
-                            <span class="text-sm font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl">${log.points || log.pontos} pts</span>
+                            <span class="text-sm font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl">${pontosCalculados} pts</span>
                         </div>
                         <div class="space-y-2">
                             ${respostasHtml}
@@ -763,7 +773,7 @@
             const dadosPorPessoa = {};
 
             logs.forEach(log => {
-                if (log.pontosPorArea && log.maxPontosPorArea && log.alvo) {
+                if (log.alvo) {
                     const nome = log.alvo.charAt(0).toUpperCase() + log.alvo.slice(1).toLowerCase();
                     if (!dadosPorPessoa[nome]) {
                         dadosPorPessoa[nome] = {
@@ -771,9 +781,28 @@
                             max: { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 }
                         };
                     }
+                    
+                    const pontosPorAreaCalculado = { sentimental: 0, espiritual: 0, financeira: 0, pessoal: 0 };
+                    if (log.respostas && log.respostas.length > 0) {
+                        log.respostas.forEach(resp => {
+                            const areaKey = resp.area || 'pessoal';
+                            if (resp.resposta === 'fez') {
+                                pontosPorAreaCalculado[areaKey] += 10;
+                            } else if (resp.resposta === 'metade') {
+                                pontosPorAreaCalculado[areaKey] += 5;
+                            }
+                        });
+                    } else if (log.pontosPorArea) {
+                        for (const area in pontosPorAreaCalculado) {
+                            pontosPorAreaCalculado[area] = log.pontosPorArea[area] || 0;
+                        }
+                    }
+
                     for (const area in dadosPorPessoa[nome].obtido) {
-                        dadosPorPessoa[nome].obtido[area] += log.pontosPorArea[area] || 0;
-                        dadosPorPessoa[nome].max[area] += log.maxPontosPorArea[area] || 0;
+                        dadosPorPessoa[nome].obtido[area] += pontosPorAreaCalculado[area];
+                        if (log.maxPontosPorArea) {
+                            dadosPorPessoa[nome].max[area] += log.maxPontosPorArea[area] || 0;
+                        }
                     }
                 }
             });
@@ -865,8 +894,21 @@
             // --- AGREGAÇÃO DO PLACAR GERAL ---
             const placar = {};
             logs.forEach(log => {
-                const nomeFormatado = log.alvo.charAt(0).toUpperCase() + log.alvo.slice(1);
-                placar[nomeFormatado] = (placar[nomeFormatado] || 0) + log.pontos;
+                if (log.alvo) {
+                    const nomeFormatado = log.alvo.charAt(0).toUpperCase() + log.alvo.slice(1);
+                    
+                    let pontosCalculados = 0;
+                    if (log.respostas && log.respostas.length > 0) {
+                        log.respostas.forEach(resp => {
+                            if (resp.resposta === 'fez') pontosCalculados += 10;
+                            else if (resp.resposta === 'metade') pontosCalculados += 5;
+                        });
+                    } else {
+                        pontosCalculados = log.pontos || 0;
+                    }
+                    
+                    placar[nomeFormatado] = (placar[nomeFormatado] || 0) + pontosCalculados;
+                }
             });
 
             // Ordenar de forma decrescente
