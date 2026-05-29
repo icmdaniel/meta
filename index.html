@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nosso Mural de Metas</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -47,6 +48,7 @@
                 <button onclick="switchTab('responder')" id="nav-responder" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition bg-white text-slate-900 shadow-sm">Responder</button>
                 <button onclick="switchTab('respostas')" id="nav-respostas" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition text-slate-600 hover:text-slate-900">Respostas</button>
                 <button onclick="switchTab('ranking')" id="nav-ranking" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition text-slate-600 hover:text-slate-900">Ranking</button>
+                <button onclick="switchTab('evolucao')" id="nav-evolucao" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition text-slate-600 hover:text-slate-900">Evolução</button>
                 <button onclick="switchTab('gerenciar')" id="nav-gerenciar" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-center transition text-slate-600 hover:text-slate-900">Gerenciar</button>
             </div>
         </nav>
@@ -133,6 +135,45 @@
                             <tbody id="tbody-ranking" class="divide-y divide-slate-100 text-sm">
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-content-evolucao" class="tab-content hidden space-y-6">
+                <div class="glass rounded-2xl p-6 shadow-sm border border-white">
+                    <h2 class="text-xl font-bold mb-4">Gráfico de Evolução 📈</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Analisar quem?</label>
+                            <select id="evolucao-parceiro" onchange="loadEvolucao()" class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none text-slate-700 font-medium">
+                                <option value="Isabelly">Isabelly</option>
+                                <option value="Daniel">Daniel</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Tipo de Análise</label>
+                            <select id="evolucao-tipo" onchange="toggleEvolucaoFiltros()" class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none text-slate-700 font-medium">
+                                <option value="area">Por Área Geral</option>
+                                <option value="meta">Por Meta Específica</option>
+                            </select>
+                        </div>
+                        <div id="container-evolucao-area" class="sm:col-span-2">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Selecione a Área</label>
+                            <select id="evolucao-area" onchange="loadEvolucao()" class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none text-slate-700 font-medium">
+                                <option value="sentimental">❤️ Área Sentimental</option>
+                                <option value="espiritual">✨ Área Espiritual</option>
+                                <option value="financeira">💰 Área Financeira</option>
+                                <option value="pessoal">🌱 Área Pessoal</option>
+                            </select>
+                        </div>
+                        <div id="container-evolucao-meta" class="hidden sm:col-span-2">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Selecione a Meta</label>
+                            <select id="evolucao-meta" onchange="loadEvolucao()" class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none text-slate-700 font-medium">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="relative w-full h-80 bg-white/40 rounded-2xl p-4 border border-slate-100">
+                        <canvas id="chart-evolucao"></canvas>
                     </div>
                 </div>
             </section>
@@ -240,6 +281,7 @@
         let arrPremiacoes = [];
         let currentUser = null;
         let editingMetaId = null;
+        let chartInstance = null;
 
         const areaLabels = {
             sentimental: "❤️ Área Sentimental",
@@ -302,6 +344,7 @@
                 arrMetas.push({ id: doc.id, ...doc.data() });
             });
             renderMetasForms();
+            populateEvolucaoMetas();
         }
 
         window.addMeta = async function() {
@@ -932,6 +975,192 @@
             `).join('');
         }
 
+        // --- POPULAR SELEÇÃO DE METAS NA EVOLUÇÃO ---
+        function populateEvolucaoMetas() {
+            const select = document.getElementById('evolucao-meta');
+            if(!select) return;
+            if(arrMetas.length === 0) {
+                select.innerHTML = '<option value="">Nenhuma meta cadastrada</option>';
+                return;
+            }
+            select.innerHTML = arrMetas.map(m => `<option value="${m.texto}">${m.texto}</option>`).join('');
+        }
+
+        // --- ALTERNAR FILTROS DA EVOLUÇÃO ---
+        window.toggleEvolucaoFiltros = function() {
+            const tipo = document.getElementById('evolucao-tipo').value;
+            if (tipo === 'area') {
+                document.getElementById('container-evolucao-area').classList.remove('hidden');
+                document.getElementById('container-evolucao-meta').classList.add('hidden');
+            } else {
+                document.getElementById('container-evolucao-area').classList.add('hidden');
+                document.getElementById('container-evolucao-meta').classList.remove('hidden');
+            }
+            loadEvolucao();
+        }
+
+        // --- PROCESSAMENTO E RENDERIZAÇÃO DO GRÁFICO DE EVOLUÇÃO ---
+        window.loadEvolucao = async function() {
+            const parceiro = document.getElementById('evolucao-parceiro').value.toLowerCase().trim();
+            const tipo = document.getElementById('evolucao-tipo').value;
+            const areaSel = document.getElementById('evolucao-area').value;
+            const metaSel = document.getElementById('evolucao-meta').value;
+
+            const querySnapshot = await getDocs(collection(db, "historico"));
+            let logs = [];
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.alvo && data.alvo.toLowerCase().trim() === parceiro) {
+                    logs.push(data);
+                }
+            });
+
+            // Ordenar por ordem cronológica crescente
+            logs.sort((a, b) => a.timestamp - b.timestamp);
+
+            const dataMap = {};
+            logs.forEach(log => {
+                const dateObj = new Date(log.timestamp);
+                const dateStr = String(dateObj.getDate()).padStart(2, '0') + '/' + String(dateObj.getMonth() + 1).padStart(2, '0') + '/' + dateObj.getFullYear();
+                
+                if (!dataMap[dateStr]) {
+                    dataMap[dateStr] = { obtido: 0, max: 0, count: 0, sumPct: 0 };
+                }
+
+                if (tipo === 'area') {
+                    let obtido = 0;
+                    let max = 0;
+                    if (log.respostas && log.respostas.length > 0) {
+                        log.respostas.forEach(resp => {
+                            if ((resp.area || 'pessoal') === areaSel) {
+                                max += 10;
+                                if (resp.resposta === 'fez') obtido += 10;
+                                else if (resp.resposta === 'metade') obtido += 5;
+                            }
+                        });
+                    } else if (log.pontosPorArea && log.maxPontosPorArea) {
+                        obtido = log.pontosPorArea[areaSel] || 0;
+                        max = log.maxPontosPorArea[areaSel] || 0;
+                    }
+                    if (max > 0) {
+                        dataMap[dateStr].obtido += obtido;
+                        dataMap[dateStr].max += max;
+                    }
+                } else {
+                    if (log.respostas && log.respostas.length > 0) {
+                        log.respostas.forEach(resp => {
+                            if (resp.metaTexto === metaSel) {
+                                let pct = 0;
+                                if (resp.resposta === 'fez') pct = 100;
+                                else if (resp.resposta === 'metade') pct = 50;
+                                
+                                dataMap[dateStr].sumPct += pct;
+                                dataMap[dateStr].count += 1;
+                            }
+                        });
+                    }
+                }
+            });
+
+            const labels = [];
+            const chartData = [];
+            const uniqueDates = [];
+
+            logs.forEach(log => {
+                const dateObj = new Date(log.timestamp);
+                const dateStr = String(dateObj.getDate()).padStart(2, '0') + '/' + String(dateObj.getMonth() + 1).padStart(2, '0') + '/' + dateObj.getFullYear();
+                if (!uniqueDates.includes(dateStr)) {
+                    uniqueDates.push(dateStr);
+                }
+            });
+
+            uniqueDates.forEach(dateStr => {
+                const item = dataMap[dateStr];
+                if (!item) return;
+
+                if (tipo === 'area') {
+                    if (item.max > 0) {
+                        labels.push(dateStr);
+                        chartData.push(Math.round((item.obtido / item.max) * 100));
+                    }
+                } else {
+                    if (item.count > 0) {
+                        labels.push(dateStr);
+                        chartData.push(Math.round(item.sumPct / item.count));
+                    }
+                }
+            });
+
+            const ctx = document.getElementById('chart-evolucao').getContext('2d');
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            if (labels.length === 0) {
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Sem registros'],
+                        datasets: [{
+                            label: 'Desempenho (%)',
+                            data: [0],
+                            borderColor: 'rgb(203, 213, 225)',
+                            backgroundColor: 'rgba(203, 213, 225, 0.2)',
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { min: 0, max: 100 } }
+                    }
+                });
+                return;
+            }
+
+            const lineColor = tipo === 'area' ? 
+                (areaSel === 'sentimental' ? 'rgb(244, 63, 94)' : areaSel === 'espiritual' ? 'rgb(99, 102, 241)' : areaSel === 'financeira' ? 'rgb(16, 185, 129)' : 'rgb(245, 158, 11)') : 'rgb(99, 102, 241)';
+            
+            const bgColor = tipo === 'area' ? 
+                (areaSel === 'sentimental' ? 'rgba(244, 63, 94, 0.1)' : areaSel === 'espiritual' ? 'rgba(99, 102, 241, 0.1)' : areaSel === 'financeira' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)') : 'rgba(99, 102, 241, 0.1)';
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Grau de Cumprimento (%)',
+                        data: chartData,
+                        borderColor: lineColor,
+                        backgroundColor: bgColor,
+                        borderWidth: 3,
+                        pointBackgroundColor: lineColor,
+                        pointRadius: 4,
+                        tension: 0.15,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) { return `Aproveitamento: ${context.parsed.y}%`; }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: { callback: function(value) { return value + '%'; } }
+                        }
+                    }
+                }
+            });
+        }
+
         // --- CONTROLE DE ALTERNÂNCIA DE ABAS ---
         window.switchTab = function(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -948,6 +1177,7 @@
 
             if(tabName === 'ranking') loadRanking();
             if(tabName === 'respostas') loadRespostasPorData();
+            if(tabName === 'evolucao') loadEvolucao();
         }
     </script>
 </body>
