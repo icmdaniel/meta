@@ -58,18 +58,17 @@
             <section id="tab-content-responder" class="tab-content block space-y-6">
                 <div class="glass rounded-2xl p-6 shadow-sm border border-white">
                     <h2 class="text-xl font-bold mb-4">Avaliação Diária</h2>
-                    
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Quem você está avaliando hoje?</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Quem você está avaliando?</label>
                             <select id="target-partner" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white/50 transition">
                                 <option value="Isabelly">Isabelly</option>
                                 <option value="Daniel">Daniel</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Data da Resposta:</label>
-                            <input type="date" id="data-resposta-cadastro" onchange="renderMetasForms()" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white/50 transition text-slate-700">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Data da Avaliação:</label>
+                            <input type="date" id="data-avaliacao-responder" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white/50 transition text-sm font-medium text-slate-700">
                         </div>
                     </div>
                     
@@ -331,15 +330,22 @@
             signOut(auth);
         });
 
+        document.getElementById('data-avaliacao-responder').addEventListener('change', renderMetasForms);
+
         // Inicialização de Dados pós Login
         async function initApp() {
             const d = new Date();
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
-            const hojeStr = `${year}-${month}-${day}`;
-            document.getElementById('filtro-data-respostas').value = hojeStr;
-            document.getElementById('data-resposta-cadastro').value = hojeStr;
+            document.getElementById('filtro-data-respostas').value = `${year}-${month}-${day}`;
+
+            const ontem = new Date();
+            ontem.setDate(ontem.getDate() - 1);
+            const oYear = ontem.getFullYear();
+            const oMonth = String(ontem.getMonth() + 1).padStart(2, '0');
+            const oDay = String(ontem.getDate()).padStart(2, '0');
+            document.getElementById('data-avaliacao-responder').value = `${oYear}-${oMonth}-${oDay}`;
 
             await Promise.all([loadMetas(), loadConsequencias(), loadPremiacoes()]);
             loadRanking();
@@ -447,17 +453,12 @@
         }
 
         // --- RENDERIZADORES DE INTERFACE (HTML DINÂMICO) ---
-        window.renderMetasForms = function() {
+        function renderMetasForms() {
             const containerForm = document.getElementById('lista-metas-responder');
             const containerCrud = document.getElementById('crud-lista-metas');
             
-            let hoje = new Date();
-            const inputData = document.getElementById('data-resposta-cadastro');
-            if (inputData && inputData.value) {
-                const dateParts = inputData.value.split('-');
-                hoje = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-            }
-            
+            const dataSelResp = document.getElementById('data-avaliacao-responder')?.value;
+            const hoje = dataSelResp ? new Date(dataSelResp + 'T12:00:00') : new Date();
             const ehDomingo = hoje.getDay() === 0;
             const amanha = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1);
             const ehUltimoDiaMes = amanha.getDate() === 1;
@@ -586,14 +587,8 @@
                 return;
             }
 
-            const dataSelCadastro = document.getElementById('data-resposta-cadastro').value;
-            if(!dataSelCadastro) {
-                alert("Por favor, selecione uma data válida!");
-                return;
-            }
-
-            const dateParts = dataSelCadastro.split('-');
-            const hoje = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            const dataSelResp = document.getElementById('data-avaliacao-responder').value;
+            const hoje = dataSelResp ? new Date(dataSelResp + 'T12:00:00') : new Date();
             const ehDomingo = hoje.getDay() === 0;
             const amanha = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1);
             const ehUltimoDiaMes = amanha.getDate() === 1;
@@ -656,7 +651,7 @@
                 pontosPorArea: pontosPorArea,
                 maxPontosPorArea: maxPontosPorArea,
                 respostas: respostasSalvas,
-                timestamp: new Date(dataSelCadastro + 'T12:00:00').getTime(),
+                timestamp: hoje.getTime(),
                 dataEnvio: serverTimestamp()
             });
 
@@ -891,7 +886,7 @@
 
                 temDadosGeral = true;
 
-                const desempenhoAreas = Object.keys(pessoaDados.obtido).map(area => {
+                const desempeñoAreas = Object.keys(pessoaDados.obtido).map(area => {
                     const max = pessoaDados.max[area];
                     const obtido = pessoaDados.obtido[area];
                     const pct = max > 0 ? Math.round((obtido / max) * 100) : 0;
@@ -905,7 +900,7 @@
                     const ordenadas = [...areasComDados].sort((a, b) => b.pct - a.pct);
                     const melhor = ordenadas[0];
                     const pior = ordenadas[ordenadas.length - 1];
-                    const nomesResumidos = { sentimental: "Sentimental", espiritual: "Espiritual", financeira: "Financeira", pessoal: "Pessoal" };
+                    const nomes Resumidos = { sentimental: "Sentimental", espiritual: "Espiritual", financeira: "Financeira", pessoal: "Pessoal" };
                     
                     let statusPiorColor = pior.pct < 40 ? 'text-rose-600 bg-rose-50 border border-rose-100' : 'text-amber-600 bg-amber-50 border border-amber-100';
                     let statusPiorLabel = pior.pct < 35 ? '⚠️ Crítico' : '📉 Precisa Melhorar';
