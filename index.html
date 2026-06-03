@@ -58,11 +58,20 @@
             <section id="tab-content-responder" class="tab-content block space-y-6">
                 <div class="glass rounded-2xl p-6 shadow-sm border border-white">
                     <h2 class="text-xl font-bold mb-4">Avaliação Diária</h2>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Quem você está avaliando hoje?</label>
-                    <select id="target-partner" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white/50 mb-6 transition">
-                        <option value="Isabelly">Isabelly</option>
-                        <option value="Daniel">Daniel</option>
-                    </select>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Quem você está avaliando hoje?</label>
+                            <select id="target-partner" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white/50 transition">
+                                <option value="Isabelly">Isabelly</option>
+                                <option value="Daniel">Daniel</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Data da Resposta:</label>
+                            <input type="date" id="data-resposta-cadastro" onchange="renderMetasForms()" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white/50 transition text-slate-700">
+                        </div>
+                    </div>
                     
                     <form id="form-metas" class="space-y-6">
                         <div id="lista-metas-responder" class="space-y-6">
@@ -328,7 +337,9 @@
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
-            document.getElementById('filtro-data-respostas').value = `${year}-${month}-${day}`;
+            const hojeStr = `${year}-${month}-${day}`;
+            document.getElementById('filtro-data-respostas').value = hojeStr;
+            document.getElementById('data-resposta-cadastro').value = hojeStr;
 
             await Promise.all([loadMetas(), loadConsequencias(), loadPremiacoes()]);
             loadRanking();
@@ -436,11 +447,17 @@
         }
 
         // --- RENDERIZADORES DE INTERFACE (HTML DINÂMICO) ---
-        function renderMetasForms() {
+        window.renderMetasForms = function() {
             const containerForm = document.getElementById('lista-metas-responder');
             const containerCrud = document.getElementById('crud-lista-metas');
             
-            const hoje = new Date();
+            let hoje = new Date();
+            const inputData = document.getElementById('data-resposta-cadastro');
+            if (inputData && inputData.value) {
+                const dateParts = inputData.value.split('-');
+                hoje = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            }
+            
             const ehDomingo = hoje.getDay() === 0;
             const amanha = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1);
             const ehUltimoDiaMes = amanha.getDate() === 1;
@@ -455,7 +472,7 @@
 
             // Render formulário de resposta segregado por área
             if(metasFiltradas.length === 0) {
-                containerForm.innerHTML = `<p class="text-slate-400 text-sm italic">Nenhuma meta aplicável para o dia de hoje.</p>`;
+                containerForm.innerHTML = `<p class="text-slate-400 text-sm italic">Nenhuma meta aplicável para o dia selecionado.</p>`;
             } else {
                 const grupos = { sentimental: [], espiritual: [], financeira: [], pessoal: [] };
                 metasFiltradas.forEach(meta => {
@@ -569,7 +586,14 @@
                 return;
             }
 
-            const hoje = new Date();
+            const dataSelCadastro = document.getElementById('data-resposta-cadastro').value;
+            if(!dataSelCadastro) {
+                alert("Por favor, selecione uma data válida!");
+                return;
+            }
+
+            const dateParts = dataSelCadastro.split('-');
+            const hoje = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
             const ehDomingo = hoje.getDay() === 0;
             const amanha = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1);
             const ehUltimoDiaMes = amanha.getDate() === 1;
@@ -632,7 +656,7 @@
                 pontosPorArea: pontosPorArea,
                 maxPontosPorArea: maxPontosPorArea,
                 respostas: respostasSalvas,
-                timestamp: Date.now(),
+                timestamp: new Date(dataSelCadastro + 'T12:00:00').getTime(),
                 dataEnvio: serverTimestamp()
             });
 
