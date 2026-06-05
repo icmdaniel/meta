@@ -125,8 +125,7 @@
                             </div>
                             <select id="filter-period" onchange="handlePeriodChange()" class="p-2 rounded-xl border border-slate-200 bg-white focus:outline-none text-sm font-medium text-slate-700">
                                 <option value="tudo">Todo o Período</option>
-                                <option value="este-mes">Este Mês</option>
-                                <option value="mes">Últimos 30 dias</option>
+                                <option value="mes" selected>Últimos 30 dias</option>
                                 <option value="semana">Últimos 7 dias</option>
                                 <option value="hoje">Hoje</option>
                                 <option value="custom">Personalizado</option>
@@ -253,7 +252,7 @@
         <div class="bg-white max-w-sm w-full rounded-3xl p-6 shadow-2xl text-center border border-slate-100 scale-95 transform transition duration-300">
             <span class="text-4xl block mb-3">🎁</span>
             <h3 class="text-lg font-bold text-slate-900 mb-2">Premiação Sorteada!</h3>
-            <p class="text-slate-500 text-sm mb-4">Parabéns pelo esforço! O prêmio sorteado foi:</p>
+            <p class="text-slate-500 text-sm mb-4">Parabéns pelo effort! O prêmio sorteado foi:</p>
             <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-indigo-700 font-semibold text-base mb-6" id="txt-premiacao-drawn">
                 Nenhuma premiação cadastrada!
             </div>
@@ -759,7 +758,7 @@
                         else if (resp.resposta === 'metade') pontosCalculados += 5;
                     });
                 } else {
-                    pointsCalculados = log.points || log.pontos || 0;
+                    pontosCalculados = log.points || log.pontos || 0;
                 }
 
                 let respostasHtml = `<p class="text-xs text-slate-400 italic">Detalhes não disponíveis para este registro.</p>`;
@@ -817,11 +816,6 @@
             // Filtragem baseada no timestamp do javascript
             if (period === "semana") {
                 logs = logs.filter(log => (now - log.timestamp) <= (7 * umDia));
-            } else if (period === "este-mes") {
-                const startOfMonth = new Date();
-                startOfMonth.setDate(1);
-                startOfMonth.setHours(0, 0, 0, 0);
-                logs = logs.filter(log => log.timestamp >= startOfMonth.getTime() && log.timestamp <= now);
             } else if (period === "mes") {
                 logs = logs.filter(log => (now - log.timestamp) <= (30 * umDia));
             } else if (period === "hoje") {
