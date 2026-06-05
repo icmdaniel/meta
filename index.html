@@ -334,12 +334,13 @@
         // Inicialização de Dados pós Login
         async function initApp() {
             const d = new Date();
+            d.setDate(d.getDate() - 1); // Subtrai 1 dia para definir automaticamente a data de ontem
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
-            const hojeStr = `${year}-${month}-${day}`;
-            document.getElementById('filtro-data-respostas').value = hojeStr;
-            document.getElementById('data-resposta-cadastro').value = hojeStr;
+            const ontemStr = `${year}-${month}-${day}`;
+            document.getElementById('filtro-data-respostas').value = ontemStr;
+            document.getElementById('data-resposta-cadastro').value = ontemStr;
 
             await Promise.all([loadMetas(), loadConsequencias(), loadPremiacoes()]);
             loadRanking();
