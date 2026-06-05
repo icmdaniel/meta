@@ -125,6 +125,7 @@
                             </div>
                             <select id="filter-period" onchange="handlePeriodChange()" class="p-2 rounded-xl border border-slate-200 bg-white focus:outline-none text-sm font-medium text-slate-700">
                                 <option value="tudo">Todo o Período</option>
+                                <option value="este-mes">Este Mês</option>
                                 <option value="mes">Últimos 30 dias</option>
                                 <option value="semana">Últimos 7 dias</option>
                                 <option value="hoje">Hoje</option>
@@ -758,7 +759,7 @@
                         else if (resp.resposta === 'metade') pontosCalculados += 5;
                     });
                 } else {
-                    pontosCalculados = log.points || log.pontos || 0;
+                    pointsCalculados = log.points || log.pontos || 0;
                 }
 
                 let respostasHtml = `<p class="text-xs text-slate-400 italic">Detalhes não disponíveis para este registro.</p>`;
@@ -816,6 +817,11 @@
             // Filtragem baseada no timestamp do javascript
             if (period === "semana") {
                 logs = logs.filter(log => (now - log.timestamp) <= (7 * umDia));
+            } else if (period === "este-mes") {
+                const startOfMonth = new Date();
+                startOfMonth.setDate(1);
+                startOfMonth.setHours(0, 0, 0, 0);
+                logs = logs.filter(log => log.timestamp >= startOfMonth.getTime() && log.timestamp <= now);
             } else if (period === "mes") {
                 logs = logs.filter(log => (now - log.timestamp) <= (30 * umDia));
             } else if (period === "hoje") {
