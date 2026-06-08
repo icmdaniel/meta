@@ -39,7 +39,7 @@
             </div>
             <div class="flex items-center gap-4">
                 <span id="user-name" class="text-sm font-medium text-slate-600 hidden sm:inline"></span>
-                <button id="btn-logout" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium py-2 px-3 rounded-lg transition">Sair</button>
+                <button id="btn-logout" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium py-2.5 px-3 rounded-lg transition">Sair</button>
             </div>
         </header>
 
@@ -194,18 +194,23 @@
                         <h2 class="text-xl font-bold mb-4">Gerenciar Metas</h2>
                         <div class="space-y-2 mb-4">
                             <input type="text" id="input-nova-meta" placeholder="Nova meta..." class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-slate-800 transition">
-                            <div class="grid grid-cols-2 gap-2">
+                            <div>
                                 <select id="select-area-meta" class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-slate-700">
                                     <option value="sentimental">❤️ Área Sentimental</option>
                                     <option value="espiritual">✨ Área Espiritual</option>
                                     <option value="financeira">💰 Área Financeira</option>
                                     <option value="pessoal">🌱 Área Pessoal</option>
                                 </select>
-                                <select id="select-frequencia-meta" class="w-full p-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-slate-700">
-                                    <option value="diaria">📆 Diária</option>
-                                    <option value="semanal">🔁 Semanal</option>
-                                    <option value="mensal">📅 Mensal</option>
-                                </select>
+                            </div>
+                            <div class="text-xs font-semibold text-slate-600 pt-1">Dias da semana:</div>
+                            <div class="flex flex-wrap gap-1 bg-white/40 p-2 rounded-xl border border-slate-200">
+                                <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" name="dias-meta" value="1" checked>Seg</label>
+                                <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" name="dias-meta" value="2" checked>Ter</label>
+                                <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" name="dias-meta" value="3" checked>Qua</label>
+                                <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" name="dias-meta" value="4" checked>Qui</label>
+                                <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" name="dias-meta" value="5" checked>Sex</label>
+                                <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" name="dias-meta" value="6" checked>Sáb</label>
+                                <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" name="dias-meta" value="0" checked>Dom</label>
                             </div>
                             <button onclick="addMeta()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium py-2.5 rounded-xl transition whitespace-nowrap">Adicionar Meta</button>
                         </div>
@@ -253,7 +258,7 @@
         <div class="bg-white max-w-sm w-full rounded-3xl p-6 shadow-2xl text-center border border-slate-100 scale-95 transform transition duration-300">
             <span class="text-4xl block mb-3">🎁</span>
             <h3 class="text-lg font-bold text-slate-900 mb-2">Premiação Sorteada!</h3>
-            <p class="text-slate-500 text-sm mb-4">Parabéns pelo effort! O prêmio sorteado foi:</p>
+            <p class="text-slate-500 text-sm mb-4">Parabéns pelo esforço! O prêmio sorteado foi:</p>
             <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-indigo-700 font-semibold text-base mb-6" id="txt-premiacao-drawn">
                 Nenhuma premiação cadastrada!
             </div>
@@ -363,12 +368,16 @@
         window.addMeta = async function() {
             const input = document.getElementById('input-nova-meta');
             const selectArea = document.getElementById('select-area-meta');
-            const selectFreq = document.getElementById('select-frequencia-meta');
+            const checkboxes = document.querySelectorAll('input[name="dias-meta"]:checked');
+            const dias = Array.from(checkboxes).map(cb => parseInt(cb.value));
             const txt = input.value.trim();
             const area = selectArea.value;
-            const freq = selectFreq.value;
             if(!txt) return;
-            await addDoc(collection(db, "metas"), { texto: txt, area: area, frequencia: freq, createdAt: serverTimestamp() });
+            if(dias.length === 0) {
+                alert("Selecione pelo menos um dia da semana!");
+                return;
+            }
+            await addDoc(collection(db, "metas"), { texto: txt, area: area, dias: dias, createdAt: serverTimestamp() });
             input.value = "";
             await loadMetas();
         }
@@ -386,9 +395,14 @@
         window.saveEditMeta = async function(id) {
             const txt = document.getElementById(`edit-text-${id}`).value.trim();
             const area = document.getElementById(`edit-area-${id}`).value;
-            const freq = document.getElementById(`edit-freq-${id}`).value;
+            const checkboxes = document.querySelectorAll(`input[name="edit-dias-${id}"]:checked`);
+            const dias = Array.from(checkboxes).map(cb => parseInt(cb.value));
             if(!txt) return;
-            await updateDoc(doc(db, "metas", id), { texto: txt, area: area, frequencia: freq });
+            if(dias.length === 0) {
+                alert("Selecione pelo menos um dia da semana!");
+                return;
+            }
+            await updateDoc(doc(db, "metas", id), { texto: txt, area: area, dias: dias });
             editingMetaId = null;
             await loadMetas();
         }
@@ -465,6 +479,9 @@
             const ehUltimoDiaMes = amanha.getDate() === 1;
 
             const metasFiltradas = arrMetas.filter(meta => {
+                if (meta.dias && Array.isArray(meta.dias)) {
+                    return meta.dias.includes(hoje.getDay());
+                }
                 const freq = meta.frequencia || 'diaria';
                 if (freq === 'diaria') return true;
                 if (freq === 'semanal' && ehDomingo) return true;
@@ -519,21 +536,27 @@
             // Render gerenciamento (Excluir/Editar)
             containerCrud.innerHTML = arrMetas.map(meta => {
                 if (meta.id === editingMetaId) {
+                    const diasMarcados = meta.dias || [0,1,2,3,4,5,6];
                     return `
                         <li class="bg-white p-3 rounded-xl border border-slate-200 text-sm space-y-2">
                             <input type="text" id="edit-text-${meta.id}" value="${meta.texto}" class="w-full p-2 text-xs rounded-lg border border-slate-200 bg-slate-50">
-                            <div class="grid grid-cols-2 gap-2">
-                                <select id="edit-area-${meta.id}" class="p-2 text-xs rounded-lg border border-slate-200 bg-white">
+                            <div>
+                                <select id="edit-area-${meta.id}" class="w-full p-2 text-xs rounded-lg border border-slate-200 bg-white">
                                     <option value="sentimental" ${meta.area === 'sentimental' ? 'selected' : ''}>❤️ Sentimental</option>
                                     <option value="espiritual" ${meta.area === 'espiritual' ? 'selected' : ''}>✨ Espiritual</option>
                                     <option value="financeira" ${meta.area === 'financeira' ? 'selected' : ''}>💰 Financeira</option>
                                     <option value="pessoal" ${meta.area === 'pessoal' ? 'selected' : ''}>🌱 Pessoal</option>
                                 </select>
-                                <select id="edit-freq-${meta.id}" class="p-2 text-xs rounded-lg border border-slate-200 bg-white">
-                                    <option value="diaria" ${meta.frequencia === 'diaria' ? 'selected' : ''}>📆 Diária</option>
-                                    <option value="semanal" ${meta.frequencia === 'semanal' ? 'selected' : ''}>🔁 Semanal</option>
-                                    <option value="mensal" ${meta.frequencia === 'mensal' ? 'selected' : ''}>📅 Mensal</option>
-                                </select>
+                            </div>
+                            <div class="text-[10px] font-semibold text-slate-500">Dias:</div>
+                            <div class="flex flex-wrap gap-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                                <label class="flex items-center gap-0.5 text-[11px]"><input type="checkbox" name="edit-dias-${meta.id}" value="1" ${diasMarcados.includes(1)?'checked':''}>Seg</label>
+                                <label class="flex items-center gap-0.5 text-[11px]"><input type="checkbox" name="edit-dias-${meta.id}" value="2" ${diasMarcados.includes(2)?'checked':''}>Ter</label>
+                                <label class="flex items-center gap-0.5 text-[11px]"><input type="checkbox" name="edit-dias-${meta.id}" value="3" ${diasMarcados.includes(3)?'checked':''}>Qua</label>
+                                <label class="flex items-center gap-0.5 text-[11px]"><input type="checkbox" name="edit-dias-${meta.id}" value="4" ${diasMarcados.includes(4)?'checked':''}>Qui</label>
+                                <label class="flex items-center gap-0.5 text-[11px]"><input type="checkbox" name="edit-dias-${meta.id}" value="5" ${diasMarcados.includes(5)?'checked':''}>Sex</label>
+                                <label class="flex items-center gap-0.5 text-[11px]"><input type="checkbox" name="edit-dias-${meta.id}" value="6" ${diasMarcados.includes(6)?'checked':''}>Sáb</label>
+                                <label class="flex items-center gap-0.5 text-[11px]"><input type="checkbox" name="edit-dias-${meta.id}" value="0" ${diasMarcados.includes(0)?'checked':''}>Dom</label>
                             </div>
                             <div class="flex justify-end gap-1">
                                 <button onclick="saveEditMeta('${meta.id}')" class="text-xs bg-emerald-50 text-emerald-600 font-medium px-2 py-1 rounded-lg hover:bg-emerald-100 transition">Salvar</button>
@@ -542,11 +565,13 @@
                         </li>
                     `;
                 } else {
+                    const diasNomes = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                    const labelDias = meta.dias ? meta.dias.map(d => diasNomes[d]).join(',') : (meta.frequencia || 'diaria');
                     return `
                         <li class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 text-sm">
                             <span class="truncate pr-2">
                                 <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 mr-1">${(meta.area || 'pessoal').substring(0,3)}</span>
-                                <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-500 mr-2">${(meta.frequencia || 'diaria').substring(0,3)}</span>
+                                <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-500 mr-2 max-w-[80px] truncate inline-block align-bottom" title="${labelDias}">${labelDias}</span>
                                 ${meta.texto}
                             </span>
                             <div class="flex gap-1 flex-shrink-0">
@@ -601,6 +626,9 @@
             const ehUltimoDiaMes = amanha.getDate() === 1;
 
             const metasFiltradas = arrMetas.filter(meta => {
+                if (meta.dias && Array.isArray(meta.dias)) {
+                    return meta.dias.includes(hoje.getDay());
+                }
                 const freq = meta.frequencia || 'diaria';
                 if (freq === 'diaria') return true;
                 if (freq === 'semanal' && ehDomingo) return true;
